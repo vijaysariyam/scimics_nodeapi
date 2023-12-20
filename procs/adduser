@@ -1,0 +1,50 @@
+CREATE OR REPLACE PROCEDURE save_scimic_user(
+    p_firstname VARCHAR(25),
+    p_lastname VARCHAR(25),
+    p_email VARCHAR(50),
+    p_hassed_password TEXT,
+    p_signin_source VARCHAR
+) AS $$
+DECLARE
+    output_result JSON;
+    user_data RECORD;
+    email_exists BOOLEAN;
+BEGIN
+    IF p_firstname IS NULL OR p_lastname IS NULL OR p_email IS NULL THEN
+        output_result := json_build_object('status', 400, 'data', 'Bad Request');
+    ELSE
+        IF p_signin_source IN ('GOOGLE', 'GITHUB') THEN
+            p_hassed_password := NULL;
+        ELSE
+            IF p_hassed_password IS NULL THEN
+                output_result := json_build_object('status', 400, 'data', 'Bad Request');
+                RETURN;
+            END IF;
+        END IF;
+
+        -- Check if the email already exists in the table
+        SELECT EXISTS(SELECT 1 FROM scimic_user WHERE email = p_email) INTO email_exists;
+        
+        IF email_exists THEN
+            output_result := json_build_object('status', 409, 'data', 'Email already exists');
+        ELSE
+            BEGIN
+                INSERT INTO scimic_user (firstname, lastname, email, hassed_password, signin_source)
+                VALUES (p_firstname, p_lastname, p_email, p_hassed_password, p_signin_source)
+                RETURNING * INTO user_data;
+                output_result := json_build_object('status', 200, 'data', user_data);
+            EXCEPTION
+                WHEN others THEN
+                    output_result := json_build_object('status', 500, 'data', 'Internal Server Error');
+            END;
+        END IF;
+    END IF;
+    RAISE NOTICE '%', output_result;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CALL save_scimic_user('John1', 'Doe', 'email@example.com', '12345678', 'EMAIL');
+CALL save_scimic_user('John2', 'Doe', 'google@example.com', NULL, 'GOOGLE');
+CALL save_scimic_user('John3', 'Doe', 'github@example.com', NULL, 'GITHUB');

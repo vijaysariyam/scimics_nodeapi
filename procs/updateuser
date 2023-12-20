@@ -1,0 +1,49 @@
+CREATE OR REPLACE PROCEDURE update_user(
+    p_user_pk INT,
+    p_firstname VARCHAR(25),
+    p_lastname VARCHAR(25),
+    p_email VARCHAR(50),
+    p_country_code VARCHAR(3),
+    p_phone VARCHAR(10)
+) AS $$
+DECLARE
+    user_exists BOOLEAN;
+BEGIN
+    IF p_user_pk IS NULL THEN
+        RAISE EXCEPTION 'User primary key is required';
+    ELSE
+        -- Check if the provided user_pk exists in the database
+        SELECT EXISTS(SELECT 1 FROM scimic_user WHERE user_pk = p_user_pk) INTO user_exists;
+
+        IF user_exists THEN
+            -- Update user details based on provided non-null values
+            UPDATE scimic_user 
+            SET 
+                firstname = COALESCE(p_firstname, firstname),
+                lastname = COALESCE(p_lastname, lastname),
+                email = COALESCE(p_email, email),
+                country_code = COALESCE(p_country_code, country_code),
+                phone = COALESCE(p_phone, phone)
+            WHERE user_pk = p_user_pk;
+
+            -- Successful update message (for testing purposes)
+            RAISE NOTICE 'User details updated for user_pk %', p_user_pk;
+        ELSE
+            -- User does not exist for the provided user_pk
+            RAISE EXCEPTION 'User with provided user_pk does not exist';
+        END IF;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CALL update_scimics_user(
+    p_user_pk := 1,
+    p_firstname := 'John',
+    p_lastname := 'Doe',
+    p_country := 'USA',
+    p_education := 1,
+    p_branch := 2
+);
+

@@ -1,0 +1,44 @@
+CREATE OR REPLACE PROCEDURE scimic_email_login(
+    p_email VARCHAR(50),
+    p_password TEXT
+) AS $$
+DECLARE
+    user_exists BOOLEAN;
+    user_data RECORD;
+    output_result JSON;
+BEGIN
+    IF p_email IS NULL OR p_email = '' THEN
+        RAISE EXCEPTION 'Email is mandatory for login';
+    ELSE
+        SELECT EXISTS(SELECT 1 FROM scimic_user WHERE email = p_email) INTO user_exists;
+
+        IF user_exists THEN
+            SELECT * INTO user_data FROM scimic_user WHERE email = p_email;
+            IF user_data.hassed_password = p_password THEN
+                output_result := json_build_object(
+                    'status', 200,
+                    'data', json_build_object(
+                        'user_id', user_data.user_pk,
+                        'email', user_data.email
+                    )
+                );
+            ELSE
+				output_result := json_build_object(
+                    'status', 500,
+                    'data', 'Incorrect password'
+                );
+            END IF;
+        ELSE
+			output_result := json_build_object(
+                    'status', 404,
+                    'data', 'Not Found'
+                );
+        END IF;
+    END IF;
+    RAISE NOTICE '%', output_result;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CALL scimic_email_login('email@example.comm' , '123456788');

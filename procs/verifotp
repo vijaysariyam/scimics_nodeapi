@@ -1,0 +1,40 @@
+
+CREATE OR REPLACE PROCEDURE scimics_verify_otp(
+    p_email VARCHAR(50),
+    p_entered_otp VARCHAR(6)
+) AS $$
+DECLARE
+    user_exists BOOLEAN;
+    stored_otp VARCHAR(6);
+BEGIN
+    IF p_email IS NULL OR p_email = '' THEN
+        RAISE EXCEPTION 'Email is required to verify OTP';
+    ELSE
+        -- Check if the provided email exists in the database
+        SELECT EXISTS(SELECT 1 FROM scimic_user WHERE email = p_email) INTO user_exists;
+
+        IF user_exists THEN
+            -- Fetch the stored OTP for the given email
+            SELECT otp INTO stored_otp FROM scimic_user WHERE email = p_email;
+
+            -- Verify if entered OTP matches the stored OTP
+            IF stored_otp = p_entered_otp THEN
+                -- Update is_account_verified to true for the user
+                UPDATE scimic_user SET is_account_verified = true WHERE email = p_email;
+
+                -- Successful OTP verification message (for testing purposes)
+                RAISE NOTICE 'OTP verified successfully for %', p_email;
+            ELSE
+                -- Incorrect OTP entered
+                RAISE EXCEPTION 'Incorrect OTP';
+            END IF;
+        ELSE
+            -- User does not exist for the provided email
+            RAISE EXCEPTION 'User with provided email does not exist';
+        END IF;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CALL scimics_verify_otp('email@example.com' , '123456')
+

@@ -1,0 +1,33 @@
+CREATE OR REPLACE PROCEDURE generate_otp_emailfor(
+    p_email VARCHAR(50)
+) AS $$
+DECLARE
+    user_exists BOOLEAN;
+    otp_code VARCHAR(6);
+BEGIN
+    IF p_email IS NULL OR p_email = '' THEN
+        RAISE EXCEPTION 'Email is required to generate OTP';
+    ELSE
+        -- Check if the provided email exists in the database
+        SELECT EXISTS(SELECT 1 FROM scimic_user WHERE email = p_email) INTO user_exists;
+
+        IF user_exists THEN
+            -- Generate a random 6-digit OTP
+            -- otp_code := LPAD(FLOOR(RANDOM() * 1000000)::TEXT, 6, '0');
+            otp_code = '123456';
+
+            -- Update the user's OTP field in the database
+            UPDATE scimic_user SET otp = otp_code WHERE email = p_email;
+
+            -- Print or return the generated OTP (for testing purposes)
+            RAISE NOTICE 'Generated OTP for %: %', p_email, otp_code;
+        ELSE
+            -- User does not exist for the provided email
+            RAISE EXCEPTION 'User with provided email does not exist';
+        END IF;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CALL generate_otp_emailfor('email@example.com');
+
