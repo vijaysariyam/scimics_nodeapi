@@ -18,10 +18,8 @@ const router = express.Router();
 async function getUserByEmail(client, email) {
   const userQuery = `
 	  SELECT * 
-	  FROM scimic_user u
-	  LEFT JOIN scimic_college sc
-	  on u.college_id = sc.college_pK
-	  WHERE u.email = $1`;
+	  FROM scimic_user
+	  WHERE email = $1`;
 
   const { rows } = await client.query(userQuery, [email]);
   return rows;
@@ -193,18 +191,18 @@ router.post("/updateuser", async (req, res) => {
     firstname,
     lastname,
     country_code,
-    country,
-    education,
-    branch,
+    college_id,
+    course_id,
+    phone,
   } = req.body;
   try {
     if (
       !firstname ||
       !lastname ||
       !country_code ||
-      !country ||
-      !education ||
-      !branch
+      !college_id ||
+      !course_id ||
+      !phone
     ) {
       return sendErrorMessage(res, "Bad Request");
     }
@@ -219,10 +217,10 @@ router.post("/updateuser", async (req, res) => {
 		firstname = $2,
 		lastname = $3,
 		country_code = $4,
-		country = $5,
-		education = $6,
-		branch = $7
-		
+		college_id = $5,
+		course_id = $6,
+		phone = $7
+
 		WHERE email = $1
 		RETURNING *`;
     var values = [
@@ -230,9 +228,9 @@ router.post("/updateuser", async (req, res) => {
       firstname,
       lastname,
       country_code,
-      country,
-      education,
-      branch,
+      college_id,
+      course_id,
+      phone,
     ];
     var { rows } = await client.query(query, values);
     if (rows.length == 1) {
