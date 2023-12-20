@@ -53,8 +53,8 @@ app.use(cookieParser());
 
 app.use("/scimics", scimicsRouter);
 
-app.get("/api/test", (req, res) => {
-  res.send("Hello letzad api");
+app.get("/", (req, res) => {
+  res.send("Hello scimics api");
 });
 //////////////////////////////////////////////////////////////////////////
 import { sendEmail, sendSMS } from "./services/emailjss.js";
@@ -126,5 +126,5 @@ app.post("/wishper", upload.single("audio"), async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server iss listening on port:${PORT}`);
+  console.log(`Server is listening on port:${PORT}`);
 });
