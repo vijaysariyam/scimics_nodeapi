@@ -20,7 +20,6 @@ async function getUserByEmail(client, email) {
 	  SELECT * 
 	  FROM scimic_user
 	  WHERE email = $1`;
-
   const { rows } = await client.query(userQuery, [email]);
   return rows;
 }
@@ -183,7 +182,6 @@ router.post("/login", async (req, res) => {
     client.release();
   }
 });
-
 router.post("/updateuser", async (req, res) => {
   const client = await pool.connect();
   const {
@@ -260,7 +258,7 @@ router.post("/updatepassword", async (req, res) => {
     const query = `
 		UPDATE scimic_user
 		SET 
-		hashed_password = $2,
+		hashed_password = $2
 		WHERE email = $1
 		RETURNING *`;
     var values = [email, hashed_password];
