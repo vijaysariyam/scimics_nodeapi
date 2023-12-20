@@ -6,7 +6,7 @@ const upload = multer({ storage: storage });
 import express, { json } from "express";
 import cors from "cors";
 
-import scimicsRouter from "./routes/testing3.router.js";
+import scimicsRouter from "./routes/main.router.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -57,12 +57,12 @@ app.get("/", (req, res) => {
   res.send("Hello scimics api");
 });
 //////////////////////////////////////////////////////////////////////////
-import { sendEmail, sendSMS } from "./services/emailjss.js";
+import { sendOtpEmail, sendSMS } from "./services/emailjss.js";
 //emailjs check
-app.post("/sendemail", async (req, res) => {
+app.post("/sendotpemail", async (req, res) => {
   const { personname, email } = req.body;
-  //const emailResult = await sendEmail(personname, email);
-  const emailResult = await sendEmail(
+  //const emailResult = await sendOtpEmail(personname, email);
+  const emailResult = await sendOtpEmail(
     "vjmusk",
     "invtechnologiesvijay2@gmail.com"
   );

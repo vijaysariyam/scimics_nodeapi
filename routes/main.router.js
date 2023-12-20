@@ -1,3 +1,10 @@
+import {
+  sendOtpEmail,
+  sendSMS,
+  sendWelcomeEmail,
+} from "../services/emailjss.js";
+import { getOTP } from "../utils/globalfunc.js";
+
 import pool from "../utils/db.js";
 import express from "express";
 import {
@@ -8,21 +15,13 @@ import {
 
 const router = express.Router();
 
-// async function checkEmailExists(client, email) {
-// 	const isFoundQuery = `
-// 	  WITH email_check AS (
-// 		SELECT EXISTS (SELECT 1 FROM scimic_user WHERE email = $1) AS "exists"
-// 	  )
-// 	  SELECT "exists" AS result FROM email_check`;
-
-// 	const values = [email];
-// 	const { rows } = await client.query(isFoundQuery, values);
-// 	return rows[0].result;
-// }
-
 async function getUserByEmail(client, email) {
   const userQuery = `
-	  SELECT * FROM scimic_user WHERE email = $1`;
+	  SELECT * 
+	  FROM scimic_user u
+	  LEFT JOIN scimic_college sc
+	  on u.college_id = sc.college_pK
+	  WHERE u.email = $1`;
 
   const { rows } = await client.query(userQuery, [email]);
   return rows;
@@ -102,7 +101,7 @@ router.post("/sendotp", async (req, res) => {
     if (rows.length == 0)
       return sendErrorMessage(res, "Couldn't find your account");
 
-    var otp = "654321";
+    var otp = getOTP(6);
     const query = `
 		UPDATE scimic_user 
 		SET otp = $2 
@@ -111,7 +110,12 @@ router.post("/sendotp", async (req, res) => {
     var values = [email, otp];
     var { rows } = await client.query(query, values);
     if (rows.length == 1) {
-      return sendOkResponse(res, []);
+      const emailResult = await sendOtpEmail("User", email, otp);
+      if (emailResult.success) {
+        return sendOkResponse(res, []);
+      } else {
+        return sendErrorMessage(res, "OTP Service down");
+      }
     } else {
       return sendErrorMessage(res, "Invalid singup");
     }
@@ -145,6 +149,7 @@ router.post("/verifyotp", async (req, res) => {
     var values = [email];
     var { rows } = await client.query(query, values);
     if (rows.length == 1) {
+      const emailResult = await sendWelcomeEmail("User", email);
       return sendOkResponse(res, []);
     } else {
       return sendErrorMessage(res, "Invalid singup");
