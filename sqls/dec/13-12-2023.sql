@@ -47,13 +47,34 @@ CONSTRAINT signin_source_type CHECK (signin_source IN ('EMAIL', 'GOOGLE' , 'GITH
 );
 
 
-
-
 DROP TABLE IF EXISTS scimic_exam_reports;CREATE TABLE IF NOT EXISTS scimic_exam_reports(
 exam_report_pk SERIAL PRIMARY KEY,
 createdon timestamp with time zone DEFAULT CURRENT_TIMESTAMP + INTERVAL '5 hours 30 minutes',
 updatedon timestamp with time zone  null,
-user_id INTEGER not null
+user_id INTEGER not null,
+total INTEGER not null,
+won INTEGER not null,
+technical_proficiency INTEGER not null,
+tp_total INTEGER not null,
+tp_won INTEGER not null,
+communication_skills INTEGER not null,
+cs_total INTEGER not null,
+cs_won INTEGER not null,
+cognitive_abilities INTEGER not null,
+ca_total INTEGER not null,
+ca_won INTEGER not null,
+interpersonal_and_teamwork_skills INTEGER not null,
+iats_total INTEGER not null,
+iats_won INTEGER not null,
+adaptability_and_continuous_learning INTEGER not null,
+aacl_total INTEGER not null,
+aacl_won INTEGER not null,
+project_management_and_time_management INTEGER not null,
+pmatm_total INTEGER not null,
+pmatm_won INTEGER not null,
+professional_etiquette_and_interview_preparedness INTEGER not null,
+peaip_total INTEGER not null,
+peiap_won INTEGER not null
 );
 
 

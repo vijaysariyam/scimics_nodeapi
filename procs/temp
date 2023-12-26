@@ -1,0 +1,66 @@
+delimiter $$
+CREATE DEFINER=`admin`@`%` PROCEDURE `GetSurveyByAgeGroup_new`(
+	IN p_DistId INT,
+    IN p_ConsId INT,
+    IN p_MandId INT,
+    IN p_DivId INT,
+    IN p_SachiId INT,
+    IN p_PartNo INT,
+    IN p_VillNo INT,
+	IN p_Gender INT,
+    IN p_ReligionId INT,
+    IN p_CasteId INT,
+    IN p_Disability INT,
+    IN p_GovtEmployee INT,
+    IN p_age_min INT,
+    IN p_age_max INT
+)
+BEGIN
+    DECLARE SqlQuery TEXT;
+    
+    
+    -- Build the dynamic SQL query with placeholders
+    
+    SET @SqlQuery = CONCAT(
+        'select l.lookup_valuename as age_group, 
+			(select count(*) from poll_survey ps left join (SELECT 
+			CASE 
+				WHEN age BETWEEN 18 AND 25 THEN "18-25"
+				WHEN age BETWEEN 26 AND 35 THEN "26-35"
+				WHEN age BETWEEN 36 AND 45 THEN "36-45"
+				WHEN age BETWEEN 46 AND 55 THEN "46-55"
+				WHEN age BETWEEN 56 AND 65 THEN "56-65"
+				WHEN age BETWEEN 66 AND 80 THEN "66-80"
+				WHEN age > 80 THEN "80+"
+				ELSE "Other" -- Cover any other ranges not specified
+			END AS age_range, age, 
+			voter_pk,voter_id,voter_name, is_newregistration, state_id, district_id, consistency_id, mandal_id, division_id,
+			sachivalayam_id, part_no, village_id, gender, religion_id, caste_id, disability, govt_employee
+		FROM voters) v on v.voter_pk=ps.voter_pk 
+			where l.lookup_valuename = v.age_range AND v.is_newregistration = false AND 
+            v.state_id= 5 ',
+		IF(p_DistId IS NOT NULL, CONCAT(' AND v.district_id = ',p_DistId), ''),
+		IF(p_ConsId IS NOT NULL, CONCAT(' AND v.consistency_id = ',p_ConsId), ''),
+        IF(p_MandId IS NOT NULL, CONCAT(' AND v.mandal_id = ',p_MandId), ''),
+        IF(p_DivId IS NOT NULL, CONCAT(' AND v.division_id = ',p_DivId), ''),
+        IF(p_SachiId IS NOT NULL, CONCAT(' AND v.sachivalayam_id = ',p_SachiId), ''),
+        IF(p_PartNo IS NOT NULL, CONCAT(' AND v.part_no = ',p_PartNo), ''),
+        IF(p_VillNo IS NOT NULL, CONCAT(' AND v.village_id = ',p_VillNo), ''),
+        IF(p_Gender IS NOT NULL, CONCAT(' AND v.gender = ', p_Gender), ''),
+        IF(p_ReligionId IS NOT NULL, CONCAT(' AND v.religion_id = ', p_ReligionId), ''),
+        IF(p_CasteId IS NOT NULL, CONCAT(' AND v.caste_id = ', p_CasteId), ''),
+        IF(p_Disability IS NOT NULL, CONCAT(' AND v.disability = ', p_disability), ''),
+        IF(p_GovtEmployee IS NOT NULL, CONCAT(' AND v.govt_employee = ', p_GovtEmployee), ''),
+        IF(p_age_min IS NOT NULL and p_age_max IS NOT NULL, CONCAT(' AND v.age BETWEEN ', p_age_min, ' AND ', p_age_max),''),
+        IF(p_age_min IS NOT NULL and p_age_max IS NULL, CONCAT(' AND v.age > ', p_age_min),''),
+        ' ) as survey_count from lookup l 
+	    where l.lookup_name = "agegrouplist"'
+    );
+	
+    -- Prepare and execute the dynamic SQL query using placeholders
+    PREPARE dynamic_statement FROM @SqlQuery;
+    
+    EXECUTE dynamic_statement;
+    DEALLOCATE PREPARE dynamic_statement;
+END;
+$$ delimiter ;
