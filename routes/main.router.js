@@ -3,6 +3,9 @@ import { getOTP } from '../utils/globalfunc.js';
 
 import pool from '../utils/db.js';
 import express from 'express';
+import axios from 'axios';
+
+
 import { sendErrorMessage, sendInternalServerErrorResponse, sendOkResponse } from '../utils/response.js';
 
 const router = express.Router();
@@ -397,6 +400,47 @@ router.post('/getreports/:id', async (req, res) => {
 		return sendInternalServerErrorResponse(res, error.message);
 	} finally {
 		client.release();
+	}
+});
+
+const githubClientId = process.env.GITHUB_CLIENT_ID;
+const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
+// Change callback URL in Github OAuth accordingly.
+
+router.get('/github/callback', async (req, res) => {
+	try {
+		const response = await axios.post("https://github.com/login/oauth/access_token", {
+			client_id: githubClientId,
+			client_secret: githubClientSecret,
+			code: req.query.code
+		}, {
+			headers: {
+				Accept: "application/json"
+			}
+		});
+
+		const accessToken = response.data.access_token;
+
+		// Use access token to fetch user info
+		const userProfile = await axios.get("https://api.github.com/user", {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				"User-Agent": "Scimics",
+			},
+		});
+
+		const userData = {
+			username: userProfile.data.login,
+			avatarUrl: userProfile.data.avatar_url,
+			// Add more fields as needed
+		};
+
+		// You can now use the 'userData' object as per your requirements
+		console.log(userProfile);
+		res.send(userProfile.data);
+	} catch (err) {
+		console.error(err);
+		res.status(500).send("Internal Server Error");
 	}
 });
 
