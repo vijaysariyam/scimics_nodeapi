@@ -5,7 +5,6 @@ import pool from '../utils/db.js';
 import express from 'express';
 import axios from 'axios';
 
-
 import { sendErrorMessage, sendInternalServerErrorResponse, sendOkResponse } from '../utils/response.js';
 
 const router = express.Router();
@@ -403,29 +402,32 @@ router.post('/getreports/:id', async (req, res) => {
 	}
 });
 
-const githubClientId = process.env.GITHUB_CLIENT_ID;
-const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
+const githubClientId = '2e63a9cb2528d488121b';
+const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
 // Change callback URL in Github OAuth accordingly.
-
 router.get('/github/callback', async (req, res) => {
 	try {
-		const response = await axios.post("https://github.com/login/oauth/access_token", {
-			client_id: githubClientId,
-			client_secret: githubClientSecret,
-			code: req.query.code
-		}, {
-			headers: {
-				Accept: "application/json"
+		const response = await axios.post(
+			'https://github.com/login/oauth/access_token',
+			{
+				client_id: githubClientId,
+				client_secret: githubClientSecret,
+				code: req.query.code,
+			},
+			{
+				headers: {
+					Accept: 'application/json',
+				},
 			}
-		});
+		);
 
 		const accessToken = response.data.access_token;
 
 		// Use access token to fetch user info
-		const userProfile = await axios.get("https://api.github.com/user", {
+		const userProfile = await axios.get('https://api.github.com/user', {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
-				"User-Agent": "Scimics",
+				'User-Agent': 'Scimics',
 			},
 		});
 
@@ -440,7 +442,7 @@ router.get('/github/callback', async (req, res) => {
 		res.send(userProfile.data);
 	} catch (err) {
 		console.error(err);
-		res.status(500).send("Internal Server Error");
+		res.status(500).send('Internal Server Error');
 	}
 });
 
