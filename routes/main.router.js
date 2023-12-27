@@ -18,6 +18,29 @@ async function getUserByEmail(client, email) {
 	return rows;
 }
 
+async function getQuestionsByCategory(client, noofquestions, catid, subcatid) {
+	const userQuery = `
+	  SELECT 
+		sq.scimic_question_pk,
+		sq.question,
+		json_build_array(sq.option1, sq.option2, sq.option3, sq.option4) AS options, 
+	    i.icap_subcategory_name AS category
+		
+		
+	  FROM scimic_questions sq
+	  JOIN icap_subcategories i
+	  on sq.icap_subcategory_id = i.icap_subcategory_pk
+	  WHERE 
+		 sq.icap_category_id = $2
+		AND sq.icap_subcategory_id = $3
+		AND sq.icap_qscategory_id = 1
+	  ORDER BY RANDOM()
+	  LIMIT $1;
+	`;
+
+	const { rows } = await client.query(userQuery, [noofquestions, catid, subcatid]);
+	return rows;
+}
 router.post('/getcolleges', async (req, res) => {
 	const client = await pool.connect();
 	try {
@@ -443,6 +466,70 @@ router.get('/github/callback', async (req, res) => {
 	} catch (err) {
 		console.error(err);
 		res.status(500).send('Internal Server Error');
+	}
+});
+
+router.post('/generatepaper', async (req, res) => {
+	const client = await pool.connect();
+	try {
+		const query = `
+		SELECT * 
+		FROM 
+		icap_config 
+		`;
+		var { rows } = await client.query(query);
+
+		if (rows.length == 1) {
+			const config = rows[0];
+			var Quantitative_Aptitude = await getQuestionsByCategory(client, 5, 1, 1);
+			var Logical_Reasoning = await getQuestionsByCategory(client, 5, 1, 2);
+
+			var Domain_Specific_Knowledge = await getQuestionsByCategory(client, 5, 1, 1);
+			var Hands_on_Coding = await getQuestionsByCategory(client, 5, 1, 2);
+
+			var English_Speaking = await getQuestionsByCategory(client, 5, 1, 1);
+			var English_Listening = await getQuestionsByCategory(client, 5, 1, 1);
+			var English_Reading = await getQuestionsByCategory(client, 5, 1, 1);
+			var English_Writing = await getQuestionsByCategory(client, 5, 1, 1);
+
+			var Interpersonal_and_Team_work_Skills = await getQuestionsByCategory(client, 5, 1, 1);
+			var Adaptability_and_Continuous_Learning = await getQuestionsByCategory(client, 5, 1, 1);
+			var Project_Management_and_Time_Management = await getQuestionsByCategory(client, 5, 1, 1);
+			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(client, 5, 1, 1);
+
+			var paper = {
+				MCQ_Questions: [
+					{
+						questions: Quantitative_Aptitude.concat(Logical_Reasoning),
+						testname: 'Cognitive Abilities',
+					},
+					{
+						questions: Domain_Specific_Knowledge.concat(Hands_on_Coding),
+						testname: 'Technical Proficiency',
+					},
+					{
+						questions: English_Speaking.concat(English_Listening)
+							.concat(English_Reading)
+							.concat(English_Writing),
+						testname: 'Communication Skills',
+					},
+					{
+						questions: Interpersonal_and_Team_work_Skills.concat(Adaptability_and_Continuous_Learning)
+							.concat(Project_Management_and_Time_Management)
+							.concat(Professional_Etiquette_and_Interview_Preparedness),
+						testname: 'Personality and Behavioral',
+					},
+				],
+			};
+
+			return sendOkResponse(res, paper);
+		} else {
+			return sendErrorMessage(res, 'Invalid configuration');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
 	}
 });
 

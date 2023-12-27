@@ -1,0 +1,50 @@
+MCQ_Questions: [
+					{
+						questions: [
+							{
+								category: 'CSEforBtech',
+								correct_answer:
+									'Compilers convert code into machine code while interpreters execute code line by line.',
+								options: [
+									'Compilers convert code into machine code while interpreters execute code line by line.',
+									'Compilers convert code into machine code while interpreters execute code all at once.',
+									'Compilers execute code line by line while interpreters convert code into machine code.',
+									'Compilers execute code all at once while interpreters convert code into machine code.',
+								],
+								question: 'What is the difference between a compiler and an interpreter?',
+							},
+							{
+								category: 'CSEforBtech',
+								correct_answer: 'array',
+								options: ['integer', 'float', 'string', 'array'],
+								question:
+									'Which of the following is not a type of data: integer, float, string, or array?',
+							},
+							{
+								category: 'CSEforBtech',
+								correct_answer:
+									'A class is a blueprint for an object, while an object is an instance of a class.',
+								options: [
+									'A class is a blueprint for an object, while an object is an instance of a class.',
+									'A class is an instance of an object, while an object is a blueprint for a class.',
+									'A class is a type of data, while an object is a value.',
+									'A class is a value, while an object is a type of data.',
+								],
+								question: 'What is the difference between a class and an object in Java?',
+							},
+							{
+								category: 'CSEforBtech',
+								correct_answer: 'To initialize the fields of an object.',
+								options: [
+									'To initialize the fields of an object.',
+									'To create an object.',
+									'To call the methods of an object.',
+									'To return the value of an object.',
+								],
+								question: 'What is the purpose of a constructor in Java?',
+							},
+						],
+						testname: 'Cognitive Abilities',
+					},
+				],
+			};
