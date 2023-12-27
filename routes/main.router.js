@@ -173,7 +173,8 @@ router.post('/verifyotp', async (req, res) => {
 		var { rows } = await client.query(query, values);
 		if (rows.length == 1) {
 			const emailResult = await sendWelcomeEmail('User', email);
-			return sendOkResponse(res, []);
+			const userData = rows[0];
+			return sendOkResponse(res, userData);
 		} else {
 			return sendErrorMessage(res, 'Invalid singup');
 		}
