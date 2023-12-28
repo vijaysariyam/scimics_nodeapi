@@ -18,9 +18,21 @@ async function getUserByEmail(client, email) {
 	return rows;
 }
 
+async function getUserByGithubId(client, githubid) {
+	const userQuery = `
+	  SELECT * 
+	  FROM scimic_user
+	  WHERE github_id = $1`;
+	const { rows } = await client.query(userQuery, [githubid]);
+	return rows;
+}
+
 async function getQuestionsByCategory(client, noofquestions, catid, subcatid) {
 	const userQuery = `
 	  SELECT 
+	    null as user_answer,
+	    sq.domain_id,
+		c.comprehension,
 		sq.scimic_question_pk,
 		sq.question,
 		json_build_array(sq.option1, sq.option2, sq.option3, sq.option4) AS options, 
@@ -30,6 +42,8 @@ async function getQuestionsByCategory(client, noofquestions, catid, subcatid) {
 	  FROM scimic_questions sq
 	  JOIN icap_subcategories i
 	  on sq.icap_subcategory_id = i.icap_subcategory_pk
+	  LEFT JOIN comprehension c
+	  on sq.comprehension_id = c.comprehension_pk
 	  WHERE 
 		 sq.icap_category_id = $2
 		AND sq.icap_subcategory_id = $3
@@ -103,11 +117,11 @@ router.post('/signup', async (req, res) => {
 	}
 });
 
-router.post('/signuporlogin', async (req, res) => {
+router.post('/googlesignuporlogin', async (req, res) => {
 	const client = await pool.connect();
-	const { firstname, lastname, email, signin_source, pic } = req.body;
+	const { firstname, lastname, email, pic } = req.body;
 	try {
-		if (!firstname || !lastname || !email || !signin_source || !pic) {
+		if (!firstname || !lastname || !email || !pic) {
 			return sendErrorMessage(res, 'Bad Request');
 		}
 		var values = [];
@@ -125,13 +139,50 @@ router.post('/signuporlogin', async (req, res) => {
 		(firstname, lastname, email, pic, signin_source , is_account_verified) VALUES 
 		($1, $2, $3, $4, $5 , $6)
 		RETURNING *`;
-			values = [firstname, lastname, email, pic, signin_source, true];
+			values = [firstname, lastname, email, pic, 'GOOGLE', true];
 		}
 		var { rows } = await client.query(query, values);
 		if (rows.length == 1) {
 			return sendOkResponse(res, rows[0]);
 		} else {
-			return sendErrorMessage(res, 'Invalid singup');
+			return sendErrorMessage(res, 'Invalid google singup');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+router.post('/githubsignuporlogin', async (req, res) => {
+	const client = await pool.connect();
+	const { avatar_url, github_id, name } = req.body;
+	try {
+		if (!name || !avatar_url || !github_id) {
+			return sendErrorMessage(res, 'Bad Request');
+		}
+		var values = [];
+		var rows;
+		var query;
+
+		rows = await getUserByGithubId(client, github_id);
+		if (rows.length > 0) {
+			//github_id Already exists retrive data
+			query = `SELECT * FROM scimic_user 
+		   WHERE github_id = $1`;
+			values = [github_id];
+		} else {
+			query = `INSERT INTO scimic_user 
+		(firstname, lastname,  pic, signin_source , is_account_verified , github_id ) VALUES 
+		($1, $2, $3, $4, $5 , $6)
+		RETURNING *`;
+			values = [name, ' ', avatar_url, 'GITHUB', true, github_id];
+		}
+		var { rows } = await client.query(query, values);
+		if (rows.length == 1) {
+			return sendOkResponse(res, rows[0]);
+		} else {
+			return sendErrorMessage(res, 'Invalid github singup');
 		}
 	} catch (error) {
 		return sendInternalServerErrorResponse(res, error.message);
@@ -413,7 +464,7 @@ router.post('/getreports/:id', async (req, res) => {
 		const query = `
 		SELECT * 
 		FROM 
-		scimic_exam_reports 
+		icap_reports 
 		where user_id = $1`;
 		var { rows } = await client.query(query, [id]);
 
@@ -428,7 +479,7 @@ router.post('/getreports/:id', async (req, res) => {
 const githubClientId = '2e63a9cb2528d488121b';
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
 // Change callback URL in Github OAuth accordingly.
-router.get('/github/callback', async (req, res) => {
+router.post('/github/callback', async (req, res) => {
 	try {
 		const response = await axios.post(
 			'https://github.com/login/oauth/access_token',
@@ -481,50 +532,200 @@ router.post('/generatepaper', async (req, res) => {
 
 		if (rows.length == 1) {
 			const config = rows[0];
-			var Quantitative_Aptitude = await getQuestionsByCategory(client, 5, 1, 1);
-			var Logical_Reasoning = await getQuestionsByCategory(client, 5, 1, 2);
+			var Quantitative_Aptitude = await getQuestionsByCategory(client, 10, 1, 1);
+			var Logical_Reasoning = await getQuestionsByCategory(client, 10, 1, 2);
+			var Cognitive_Abilities = Quantitative_Aptitude.concat(Logical_Reasoning);
 
-			var Domain_Specific_Knowledge = await getQuestionsByCategory(client, 5, 1, 1);
-			var Hands_on_Coding = await getQuestionsByCategory(client, 5, 1, 2);
+			var Domain_Specific_Knowledge = await getQuestionsByCategory(client, 10, 2, 3);
+			var Hands_on_Coding = await getQuestionsByCategory(client, 10, 2, 4);
+			var Technical_Proficiency = Domain_Specific_Knowledge.concat(Hands_on_Coding);
 
-			var English_Speaking = await getQuestionsByCategory(client, 5, 1, 1);
-			var English_Listening = await getQuestionsByCategory(client, 5, 1, 1);
-			var English_Reading = await getQuestionsByCategory(client, 5, 1, 1);
-			var English_Writing = await getQuestionsByCategory(client, 5, 1, 1);
+			var English_Speaking = await getQuestionsByCategory(client, 0, 3, 5);
+			var English_Listening = await getQuestionsByCategory(client, 5, 3, 6);
+			var English_Reading = await getQuestionsByCategory(client, 10, 3, 7);
+			var English_Writing = await getQuestionsByCategory(client, 0, 3, 8);
+			var Communication_Skills = English_Speaking.concat(English_Listening)
+				.concat(English_Reading)
+				.concat(English_Writing);
+			Communication_Skills.sort((a, b) => a.comprehension_id - b.comprehension_id);
 
-			var Interpersonal_and_Team_work_Skills = await getQuestionsByCategory(client, 5, 1, 1);
-			var Adaptability_and_Continuous_Learning = await getQuestionsByCategory(client, 5, 1, 1);
-			var Project_Management_and_Time_Management = await getQuestionsByCategory(client, 5, 1, 1);
-			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(client, 5, 1, 1);
+			var Interpersonal_and_Team_work_Skills = await getQuestionsByCategory(client, 5, 4, 10);
+			var Adaptability_and_Continuous_Learning = await getQuestionsByCategory(client, 5, 4, 11);
+			var Project_Management_and_Time_Management = await getQuestionsByCategory(client, 5, 4, 12);
+			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(client, 5, 4, 13);
+			var Personality_and_Behavioral = Interpersonal_and_Team_work_Skills.concat(
+				Adaptability_and_Continuous_Learning
+			)
+				.concat(Project_Management_and_Time_Management)
+				.concat(Professional_Etiquette_and_Interview_Preparedness);
 
-			var paper = {
-				MCQ_Questions: [
-					{
-						questions: Quantitative_Aptitude.concat(Logical_Reasoning),
-						testname: 'Cognitive Abilities',
-					},
-					{
-						questions: Domain_Specific_Knowledge.concat(Hands_on_Coding),
-						testname: 'Technical Proficiency',
-					},
-					{
-						questions: English_Speaking.concat(English_Listening)
-							.concat(English_Reading)
-							.concat(English_Writing),
-						testname: 'Communication Skills',
-					},
-					{
-						questions: Interpersonal_and_Team_work_Skills.concat(Adaptability_and_Continuous_Learning)
-							.concat(Project_Management_and_Time_Management)
-							.concat(Professional_Etiquette_and_Interview_Preparedness),
-						testname: 'Personality and Behavioral',
-					},
-				],
-			};
-
+			var paper = [
+				{
+					totalquestions: Cognitive_Abilities.length,
+					questions: Cognitive_Abilities,
+					testname: 'Cognitive Abilities',
+					duration: 30 * 60,
+				},
+				{
+					totalquestions: Technical_Proficiency.length,
+					questions: Technical_Proficiency,
+					testname: 'Technical Proficiency',
+					duration: 30 * 60,
+				},
+				{
+					totalquestions: Communication_Skills.length,
+					questions: Communication_Skills,
+					testname: 'Communication Skills',
+					duration: 45 * 60,
+				},
+				{
+					totalquestions: Personality_and_Behavioral.length,
+					questions: Personality_and_Behavioral,
+					testname: 'Personality and Behavioral',
+					duration: 30 * 60,
+				},
+			];
 			return sendOkResponse(res, paper);
 		} else {
 			return sendErrorMessage(res, 'Invalid configuration');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+router.post('/validatepaper/:userid', async (req, res) => {
+	const client = await pool.connect();
+	try {
+		var user_id = req.params.userid;
+
+		const userData = req.body.data;
+		var result = {
+			user_id: parseInt(user_id),
+
+			total: 0,
+			won: 0,
+
+			ca_total: 0,
+			ca_won: 0,
+			ca_time: 0,
+
+			tp_total: 0,
+			tp_won: 0,
+			tp_time: 0,
+
+			cs_total: 0,
+			cs_won: 0,
+			cs_time: 0,
+
+			pb_total: 0,
+			pb_won: 0,
+			pb_time: 0,
+		};
+
+		for (let i = 0; i < userData.length; i++) {
+			var won = 0;
+			var qsinfo = userData[i];
+			var testqs = qsinfo['questions'];
+			for (let j = 0; j < testqs.length; j++) {
+				var qs = testqs[j];
+				var id = qs.scimic_question_pk;
+				var query = `
+				SELECT answer
+				FROM 
+				scimic_questions 
+				where scimic_question_pk = $1`;
+				var { rows } = await client.query(query, [id]);
+				const orgial_answer = rows[0].answer;
+
+				if (qs.user_answer == orgial_answer) {
+					won = won + 1;
+				}
+			}
+
+			if (i == 0) {
+				result.ca_total = testqs.length;
+				result.ca_won = won;
+				result.ca_time = qsinfo.duration;
+			} else if (i == 1) {
+				result.tp_total = testqs.length;
+				result.tp_won = won;
+				result.tp_time = qsinfo.duration;
+			} else if (i == 2) {
+				result.cs_total = testqs.length;
+				result.cs_won = won;
+				result.cs_time = qsinfo.duration;
+			} else if (i == 3) {
+				result.pb_total = testqs.length;
+				result.pb_won = won;
+				result.pb_time = qsinfo.duration;
+			}
+
+			won = 0;
+		}
+
+		result.total = result.ca_total + result.tp_total + result.cs_total + result.pb_total;
+		result.won = result.ca_won + result.tp_won + result.cs_won + result.pb_won;
+		var {
+			user_id,
+
+			total,
+			won,
+
+			ca_total,
+			ca_won,
+			ca_time,
+
+			tp_total,
+			tp_won,
+			tp_time,
+
+			cs_total,
+			cs_won,
+			cs_time,
+
+			pb_total,
+			pb_won,
+			pb_time,
+		} = result;
+
+		//save report
+		var query = `INSERT INTO 
+		icap_reports(
+		user_id, 
+		total, won, 
+		ca_total, ca_won, ca_time, 
+		tp_total, tp_won, tp_time, 
+		cs_total, cs_won, cs_time, 
+		pb_total, pb_won, pb_time
+		)
+		VALUES (
+		$1,$2,$3,$4,$5,$6,$7,$8,$9, $10,$11,$12,$13,$14,$15)
+		RETURNING *`;
+		var { rows } = await client.query(query, [
+			user_id,
+			total,
+			won,
+			ca_total,
+			ca_won,
+			ca_time,
+			tp_total,
+			tp_won,
+			tp_time,
+			cs_total,
+			cs_won,
+			cs_time,
+			pb_total,
+			pb_won,
+			pb_time,
+		]);
+
+		if (rows.length == 1) {
+			return sendOkResponse(res, result);
+		} else {
+			return sendErrorMessage(res, 'Exam submission failed');
 		}
 	} catch (error) {
 		return sendInternalServerErrorResponse(res, error.message);
