@@ -479,7 +479,7 @@ router.post('/getreports/:id', async (req, res) => {
 const githubClientId = '2e63a9cb2528d488121b';
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
 // Change callback URL in Github OAuth accordingly.
-router.post('/github/callback', async (req, res) => {
+router.get('/github/callback', async (req, res) => {
 	try {
 		const response = await axios.post(
 			'https://github.com/login/oauth/access_token',
