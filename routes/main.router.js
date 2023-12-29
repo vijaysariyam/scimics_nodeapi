@@ -55,6 +55,42 @@ async function getQuestionsByCategory(client, noofquestions, catid, subcatid) {
 	const { rows } = await client.query(userQuery, [noofquestions, catid, subcatid]);
 	return rows;
 }
+
+async function getCompQuestionsByCategory(client, noofcomquestions, catid, subcatid) {
+	const userQuery = `
+	  SELECT 
+	    null as user_answer,
+	    sq.domain_id,
+		c.comprehension,
+		sq.scimic_question_pk,
+		sq.question,
+		json_build_array(sq.option1, sq.option2, sq.option3, sq.option4) AS options, 
+	    i.icap_subcategory_name AS category
+		
+		
+	  FROM scimic_questions sq
+	  JOIN icap_subcategories i
+	  on sq.icap_subcategory_id = i.icap_subcategory_pk
+	  LEFT JOIN comprehension c
+	  on sq.comprehension_id = c.comprehension_pk
+	  WHERE sq.comprehension_id 
+	  in(
+		select comprehension_id from scimic_questions 
+			WHERE 
+			comprehension_id IS NOT NULL and
+			icap_category_id = $2
+		    AND icap_subcategory_id = $3
+		    AND icap_qscategory_id = 1
+			
+			GROUP BY comprehension_id
+		order by random()
+		limit $1
+		)
+	`;
+
+	const { rows } = await client.query(userQuery, [noofcomquestions, catid, subcatid]);
+	return rows;
+}
 router.post('/getcolleges', async (req, res) => {
 	const client = await pool.connect();
 	try {
@@ -275,7 +311,7 @@ router.post('/login', async (req, res) => {
 		if (password != userData.hashed_password) {
 			return sendErrorMessage(res, 'Invalid credentials');
 		} else {
-			delete userData.hashed_password;
+			//delete userData.hashed_password;
 			return sendOkResponse(res, userData);
 		}
 	} catch (error) {
@@ -506,14 +542,15 @@ router.get('/github/callback', async (req, res) => {
 		});
 
 		const userData = {
-			username: userProfile.data.login,
+			github_id: userProfile.data.github_id,
 			avatarUrl: userProfile.data.avatar_url,
+			name: userProfile.data.name,
 			// Add more fields as needed
 		};
 
 		// You can now use the 'userData' object as per your requirements
-		console.log(userProfile);
-		res.send(userProfile.data);
+		//console.log(userProfile);
+		res.send(userData);
 	} catch (err) {
 		console.error(err);
 		res.status(500).send('Internal Server Error');
@@ -540,19 +577,20 @@ router.post('/generatepaper', async (req, res) => {
 			var Hands_on_Coding = await getQuestionsByCategory(client, 10, 2, 4);
 			var Technical_Proficiency = Domain_Specific_Knowledge.concat(Hands_on_Coding);
 
-			var English_Speaking = await getQuestionsByCategory(client, 0, 3, 5);
-			var English_Listening = await getQuestionsByCategory(client, 5, 3, 6);
-			var English_Reading = await getQuestionsByCategory(client, 10, 3, 7);
-			var English_Writing = await getQuestionsByCategory(client, 0, 3, 8);
+			var English_Speaking = await getCompQuestionsByCategory(client, 0, 3, 5);
+			var English_Listening = await getCompQuestionsByCategory(client, 1, 3, 6);
+			var English_Reading = await getCompQuestionsByCategory(client, 2, 3, 7);
+			var English_Writing = await getCompQuestionsByCategory(client, 0, 3, 8);
 			var Communication_Skills = English_Speaking.concat(English_Listening)
 				.concat(English_Reading)
 				.concat(English_Writing);
-			Communication_Skills.sort((a, b) => a.comprehension_id - b.comprehension_id);
+			//Communication_Skills.sort((a, b) => a.comprehension_id - b.comprehension_id);
 
 			var Interpersonal_and_Team_work_Skills = await getQuestionsByCategory(client, 5, 4, 10);
 			var Adaptability_and_Continuous_Learning = await getQuestionsByCategory(client, 5, 4, 11);
 			var Project_Management_and_Time_Management = await getQuestionsByCategory(client, 5, 4, 12);
 			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(client, 5, 4, 13);
+
 			var Personality_and_Behavioral = Interpersonal_and_Team_work_Skills.concat(
 				Adaptability_and_Continuous_Learning
 			)
