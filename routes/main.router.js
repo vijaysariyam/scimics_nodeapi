@@ -772,4 +772,110 @@ router.post('/validatepaper/:userid', async (req, res) => {
 	}
 });
 
+// function isValidJson(str) {
+// 	try {
+// 		JSON.parse(str);
+// 		return true;
+// 	} catch (error) {
+// 		return false;
+// 	}
+// }
+
+
+router.post('/getcognitiveq', async (req, res) => {
+	try {
+		const jsonUrl = 'https://parametr-1.onrender.com/parameter1';
+		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+
+		console.log('Received data:', data);
+
+		if (data) {
+			// Check if data is present
+			return sendOkResponse(res, data);
+		} else {
+			return sendErrorResponse(res, 'No data received');
+		}
+	} catch (error) {
+		console.error('Error:', error.message);
+		return sendInternalServerErrorResponse(res, error.message);
+	}
+});
+
+router.post('/gettechnicalq', async (req, res) => {
+	try {
+		const jsonUrl = 'https://scimics.onrender.com/parameter2';
+		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+
+		console.log('Received data:', data);
+
+		if (data) {
+			// Check if data is present
+			return sendOkResponse(res, data);
+		} else {
+			return sendErrorResponse(res, 'No data received');
+		}
+	} catch (error) {
+		console.error('Error:', error.message);
+		return sendInternalServerErrorResponse(res, error.message);
+	}
+});
+
+router.post('/getcommunicationq', async (req, res) => {
+	try {
+		const jsonUrl = 'https://scimics-3.onrender.com/parameter3';
+		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+
+		console.log('Received data:', data);
+
+		if (data) {
+			// Check if data is present
+			return sendOkResponse(res, data);
+		} else {
+			return sendErrorResponse(res, 'No data received');
+		}
+	} catch (error) {
+		console.error('Error:', error.message);
+		return sendInternalServerErrorResponse(res, error.message);
+	}
+});
+
+router.post('/getpersonalityq', async (req, res) => {
+	try {
+		const jsonUrl = 'https://scimics-4.onrender.com/parameter4';
+		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+
+		console.log('Received data:', data);
+
+		if (data) {
+			// Check if data is present
+			return sendOkResponse(res, data);
+		} else {
+			return sendErrorResponse(res, 'No data received');
+		}
+	} catch (error) {
+		console.error('Error:', error.message);
+		return sendInternalServerErrorResponse(res, error.message);
+	}
+});
+
+router.post('/get4parameterq', async (req, res) => {
+	try {
+		const jsonUrl = 'https://mcq4.onrender.com/get_mcq4';
+		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+
+		console.log('Received data:', data);
+
+		if (data) {
+			// Check if data is present
+			return sendOkResponse(res, data);
+		} else {
+			return sendErrorResponse(res, 'No data received');
+		}
+	} catch (error) {
+		console.error('Error:', error.message);
+		return sendInternalServerErrorResponse(res, error.message);
+	}
+});
+
+
 export default router;
