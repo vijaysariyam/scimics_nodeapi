@@ -11,6 +11,7 @@ import scimicsRouter from './routes/main.router.js';
 import dotenv from 'dotenv';
 dotenv.config();
 import cookieParser from 'cookie-parser';
+import bodyParser from 'body-parser';
 
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -50,6 +51,7 @@ app.use(cors(corsOptions));
 
 app.use(json());
 app.use(cookieParser());
+app.use(bodyParser.json());
 
 app.use('/scimics', scimicsRouter);
 

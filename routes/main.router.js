@@ -2,8 +2,11 @@ import { sendOtpEmail, sendSMS, sendWelcomeEmail } from '../services/emailjss.js
 import { getOTP } from '../utils/globalfunc.js';
 
 import pool from '../utils/db.js';
-import express from 'express';
+import express, { response } from 'express';
 import axios from 'axios';
+
+const fetch = (...args) =>
+	import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 import { sendErrorMessage, sendInternalServerErrorResponse, sendOkResponse } from '../utils/response.js';
 
@@ -512,50 +515,103 @@ router.post('/getreports/:id', async (req, res) => {
 	}
 });
 
-const githubClientId = '2e63a9cb2528d488121b';
+
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
-// Change callback URL in Github OAuth accordingly.
-router.get('/github/callback', async (req, res) => {
+const githubClientId = '2e63a9cb2528d488121b';
+
+router.get('/getAccessToken', async (req, res) => {
+	const params = `?client_id=${githubClientId}&client_secret=${githubClientSecret}&code=${req.query.code}`;
+
 	try {
-		const response = await axios.post(
-			'https://github.com/login/oauth/access_token',
-			{
-				client_id: githubClientId,
-				client_secret: githubClientSecret,
-				code: req.query.code,
-			},
-			{
-				headers: {
-					Accept: 'application/json',
-				},
-			}
-		);
-
-		const accessToken = response.data.access_token;
-
-		// Use access token to fetch user info
-		const userProfile = await axios.get('https://api.github.com/user', {
+		const response = await fetch(`https://github.com/login/oauth/access_token${params}`, {
+			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				'User-Agent': 'Scimics',
+				Accept: 'application/json',
 			},
 		});
 
-		const userData = {
-			github_id: userProfile.data.github_id,
-			avatarUrl: userProfile.data.avatar_url,
-			name: userProfile.data.name,
-			// Add more fields as needed
-		};
-
-		// You can now use the 'userData' object as per your requirements
-		//console.log(userProfile);
-		res.send(userData);
-	} catch (err) {
-		console.error(err);
-		res.status(500).send('Internal Server Error');
+		const data = await response.json();
+		res.json(data);
+		console.log(data);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ message: 'Internal Server Error' });
 	}
 });
+
+router.get('/getUserData', async (req, res) => {
+	const authorizationHeader = req.headers.authorization;
+
+	// Check if the Authorization header is present
+	if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
+		return res.status(401).json({ message: 'Unauthorized - Missing or invalid token' });
+	}
+
+	const accessToken = authorizationHeader.substring(7); // Remove 'Bearer ' from the token
+	console.log('Received Authorization Header:', accessToken);
+
+	try {
+		const response = await fetch('https://api.github.com/user', {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		});
+
+		const data = await response.json();
+		res.json(data);
+		console.log(data);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ message: 'Internal Server Error' });
+	}
+});
+
+
+
+
+// Change callback URL in Github OAuth accordingly.
+// router.get('/github/callback', async (req, res) => {
+// 	try {
+// 		const response = await axios.post(
+// 			'https://github.com/login/oauth/access_token',
+// 			{
+// 				client_id: githubClientId,
+// 				client_secret: githubClientSecret,
+// 				code: req.query.code,
+// 			},
+// 			{
+// 				headers: {
+// 					Accept: 'application/json',
+// 				},
+// 			}
+// 		);
+
+// 		const accessToken = response.data.access_token;
+
+// 		// Use access token to fetch user info
+// 		const userProfile = await axios.get('https://api.github.com/user', {
+// 			headers: {
+// 				Authorization: `Bearer ${accessToken}`,
+// 				'User-Agent': 'Scimics',
+// 			},
+// 		});
+
+// 		const userData = {
+// 			github_id: userProfile.data.github_id,
+// 			avatarUrl: userProfile.data.avatar_url,
+// 			name: userProfile.data.name,
+// 			// Add more fields as needed
+// 		};
+
+// 		// You can now use the 'userData' object as per your requirements
+// 		//console.log(userProfile);
+// 		res.send(userData);
+// 	} catch (err) {
+// 		console.error(err);
+// 		res.status(500).send('Internal Server Error');
+// 	}
+// });
 
 router.post('/generatepaper', async (req, res) => {
 	const client = await pool.connect();
