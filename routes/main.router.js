@@ -519,7 +519,7 @@ router.post('/getreports/:id', async (req, res) => {
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
 const githubClientId = '2e63a9cb2528d488121b';
 
-router.get('/getAccessToken', async (req, res) => {
+router.get('/gitAccessToken', async (req, res) => {
 	const params = `?client_id=${githubClientId}&client_secret=${githubClientSecret}&code=${req.query.code}`;
 
 	try {
@@ -533,18 +533,19 @@ router.get('/getAccessToken', async (req, res) => {
 		const data = await response.json();
 		res.json(data);
 		console.log(data);
+		sendOkResponse(res, data);
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ message: 'Internal Server Error' });
+		sendInternalServerErrorResponse(res, 'Internal Server Error');
 	}
 });
 
-router.get('/getUserData', async (req, res) => {
+router.get('/gitUserData', async (req, res) => {
 	const authorizationHeader = req.headers.authorization;
 
 	// Check if the Authorization header is present
 	if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
-		return res.status(401).json({ message: 'Unauthorized - Missing or invalid token' });
+		return sendErrorResponse(res, 'Unauthorized - Missing or invalid token');
 	}
 
 	const accessToken = authorizationHeader.substring(7); // Remove 'Bearer ' from the token
@@ -561,9 +562,10 @@ router.get('/getUserData', async (req, res) => {
 		const data = await response.json();
 		res.json(data);
 		console.log(data);
+		sendOkResponse(res, data);
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ message: 'Internal Server Error' });
+		sendInternalServerErrorResponse(res, 'Internal Server Error');
 	}
 });
 
@@ -860,12 +862,11 @@ router.post('/getcognitiveq', async (req, res) => {
 router.post('/gettechnicalq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://scimics.onrender.com/parameter2';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+		const { data } = await axios.post(jsonUrl, req.body);
 
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
@@ -879,12 +880,10 @@ router.post('/gettechnicalq', async (req, res) => {
 router.post('/getcommunicationq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://scimics-3.onrender.com/parameter3';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
-
+		const { data } = await axios.post(jsonUrl, req.body);
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
@@ -898,12 +897,10 @@ router.post('/getcommunicationq', async (req, res) => {
 router.post('/getpersonalityq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://scimics-4.onrender.com/parameter4';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
-
+		const { data } = await axios.post(jsonUrl, req.body);
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
@@ -917,12 +914,10 @@ router.post('/getpersonalityq', async (req, res) => {
 router.post('/get4parameterq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://mcq4.onrender.com/get_mcq4';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
-
+		const { data } = await axios.post(jsonUrl, req.body);
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
