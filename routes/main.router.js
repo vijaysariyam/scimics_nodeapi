@@ -877,7 +877,7 @@ router.post('/get4parameterq', async (req, res) => {
 	}
 });
 
-router.post('/adminq', async (req, res) => {
+router.post('/approveq', async (req, res) => {
 	const client = await pool.connect();
 	const {
 		question,
@@ -890,6 +890,7 @@ router.post('/adminq', async (req, res) => {
 		icap_subcategory_id,
 		icap_qscategory_id,
 		comprehension_id,
+		domain_id
 	} = req.body;
 	try {
 		if (
@@ -909,9 +910,9 @@ router.post('/adminq', async (req, res) => {
 		console.log(req.body);
 
 		var query = `INSERT INTO scimic_questions 
-		(question, option1, option2, option3, option4, answer, icap_category_id, icap_subcategory_id, icap_qscategory_id, comprehension_id)
+		(question, option1, option2, option3, option4, answer, icap_category_id, icap_subcategory_id, icap_qscategory_id, comprehension_id, domain_id)
 		VALUES 
-		($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 		RETURNING *`;
 		var values = [
 			question,
@@ -924,6 +925,7 @@ router.post('/adminq', async (req, res) => {
 			icap_subcategory_id,
 			icap_qscategory_id,
 			comprehension_id,
+			domain_id
 		];
 		var { rows } = await client.query(query, values);
 		if (rows.length == 1) {
@@ -938,6 +940,128 @@ router.post('/adminq', async (req, res) => {
 		client.release();
 	}
 });
+
+router.post('/updateconfig', async (req, res) => {
+	const client = await pool.connect();
+	const {
+		ca_qa_total,
+		ca_lr_total,
+		ca_time,
+		tp_dsk_total,
+		tp_hc_total,
+		tp_time,
+		cs_s_total,
+		cs_w_total,
+		cs_l_total,
+		cs_r_total,
+		cs_time,
+		pb_itws_total,
+		pb_acl_total,
+		pb_pmtm_total,
+		pb_peip_total,
+		pb_time,
+	} = req.body;
+
+	try {
+		if (
+			!ca_qa_total ||
+			!ca_lr_total ||
+			!ca_time ||
+			!tp_dsk_total ||
+			!tp_hc_total ||
+			!tp_time ||
+			!cs_s_total ||
+			!cs_w_total ||
+			!cs_l_total ||
+			!cs_r_total ||
+			!cs_time ||
+			!pb_itws_total ||
+			!pb_acl_total ||
+			!pb_pmtm_total ||
+			!pb_peip_total ||
+			!pb_time
+		) {
+			// console.log("All fields are not available");
+			return sendErrorMessage(res, 'Bad Configuration Request');
+		}
+
+		// console.log(req.body);
+
+		var query = `UPDATE icap_config SET 
+		    ca_qa_total = $1,
+		    ca_lr_total = $2,
+		    ca_time = $3,
+		    tp_dsk_total = $4,
+		    tp_hc_total = $5,
+		    tp_time = $6,
+		    cs_s_total = $7,
+		    cs_w_total = $8,
+		    cs_l_total = $9,
+		    cs_r_total = $10,
+		    cs_time = $11,
+		    pb_itws_total = $12,
+		    pb_acl_total = $13,
+		    pb_pmtm_total = $14,
+		    pb_peip_total = $15,
+		    pb_time = $16
+		WHERE icap_config_pk = 1
+		RETURNING *`;
+
+		var values = [
+			ca_qa_total,
+			ca_lr_total,
+			ca_time,
+			tp_dsk_total,
+			tp_hc_total,
+			tp_time,
+			cs_s_total,
+			cs_w_total,
+			cs_l_total,
+			cs_r_total,
+			cs_time,
+			pb_itws_total,
+			pb_acl_total,
+			pb_pmtm_total,
+			pb_peip_total,
+			pb_time,
+		];
+
+		var { rows } = await client.query(query, values);
+
+		if (rows.length === 1) {
+			return sendOkResponse(res, rows[0]);
+		} else {
+			return sendErrorMessage(res, 'Invalid configuration');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+
+router.get('/getconfig', async (req, res) => {
+	const client = await pool.connect();
+
+	try {
+		const query = 'SELECT * FROM icap_config WHERE icap_config_pk = 1';
+		const { rows } = await client.query(query);
+
+		if (rows.length === 1) {
+			// console.log(rows[0])
+			return sendOkResponse(res, rows[0]);
+		} else {
+			return sendErrorMessage(res, 'Question Configuration not found');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+
 
 
 export default router;
