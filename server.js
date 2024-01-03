@@ -181,6 +181,6 @@ app.post('/wishper', upload.single('audio'), async (req, res) => {
 	}
 });
 
-app.listen(PORT, () => {
-	console.log(`Server is listening on port: http://localhost:${PORT}`);
+app.listen(PORT, "192.168.0.108", () => {
+	console.log(`Server is listening on port: http://192.168.0.108:${PORT}`);
 });

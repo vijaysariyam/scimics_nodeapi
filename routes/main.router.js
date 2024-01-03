@@ -877,5 +877,67 @@ router.post('/get4parameterq', async (req, res) => {
 	}
 });
 
+router.post('/adminq', async (req, res) => {
+	const client = await pool.connect();
+	const {
+		question,
+		option1,
+		option2,
+		option3,
+		option4,
+		answer,
+		icap_category_id,
+		icap_subcategory_id,
+		icap_qscategory_id,
+		comprehension_id,
+	} = req.body;
+	try {
+		if (
+			!question ||
+			!option1 ||
+			!option2 ||
+			!option3 ||
+			!option4 ||
+			!answer ||
+			!icap_category_id ||
+			!icap_subcategory_id ||
+			!icap_qscategory_id
+		) {
+			return sendErrorMessage(res, 'Bad Request');
+		}
+
+		console.log(req.body);
+
+		var query = `INSERT INTO scimic_questions 
+		(question, option1, option2, option3, option4, answer, icap_category_id, icap_subcategory_id, icap_qscategory_id, comprehension_id)
+		VALUES 
+		($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		RETURNING *`;
+		var values = [
+			question,
+			option1,
+			option2,
+			option3,
+			option4,
+			answer,
+			icap_category_id,
+			icap_subcategory_id,
+			icap_qscategory_id,
+			comprehension_id,
+		];
+		var { rows } = await client.query(query, values);
+		if (rows.length == 1) {
+			console.log(rows);
+			return sendOkResponse(res, []);
+		} else {
+			return sendErrorMessage(res, 'Invalid question');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
 
 export default router;
