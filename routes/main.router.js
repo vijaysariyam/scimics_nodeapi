@@ -531,7 +531,7 @@ router.get('/gitAccessToken', async (req, res) => {
 		});
 
 		const data = await response.json();
-		res.json(data);
+		res.status(200).json(data);
 		console.log(data);
 		// sendOkResponse(res, data);
 	} catch (error) {
@@ -551,8 +551,10 @@ router.get('/gitUserData', async (req, res) => {
 	const accessToken = authorizationHeader.substring(7); // Remove 'Bearer ' from the token
 	console.log('Received Authorization Header:', accessToken);
 
+	const githubApiUrl = 'https://api.github.com/user';
+
 	try {
-		const response = await fetch('https://api.github.com/user', {
+		const response = await fetch(githubApiUrl, {
 			method: 'GET',
 			headers: {
 				Authorization: `Bearer ${accessToken}`,
@@ -560,14 +562,18 @@ router.get('/gitUserData', async (req, res) => {
 		});
 
 		const data = await response.json();
-		res.json(data);
-		console.log(data);
-		// sendOkResponse(res, data);
+
+		if (response.ok) {
+			return sendOkResponse(res, data);
+		} else {
+			return sendErrorMessage(res, 'Failed to fetch GitHub user data');
+		}
 	} catch (error) {
 		console.error(error);
-		sendInternalServerErrorResponse(res, 'Internal Server Error');
+		return sendInternalServerErrorResponse(res, 'Internal Server Error');
 	}
 });
+
 
 
 
