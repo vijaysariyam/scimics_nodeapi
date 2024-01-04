@@ -569,27 +569,45 @@ router.post('/generatepaper', async (req, res) => {
 
 		if (rows.length == 1) {
 			const config = rows[0];
-			var Quantitative_Aptitude = await getQuestionsByCategory(client, 10, 1, 1);
-			var Logical_Reasoning = await getQuestionsByCategory(client, 10, 1, 2);
+			const { ca_qa_total,
+				ca_lr_total,
+				ca_time,
+				tp_dsk_total,
+				tp_hc_total,
+				tp_time,
+				cs_s_total,
+				cs_w_total,
+				cs_l_total,
+				cs_r_total,
+				cs_time,
+				pb_itws_total,
+				pb_acl_total,
+				pb_pmtm_total,
+				pb_peip_total,
+				pb_time, } = config
+			console.log(config);
+
+			var Quantitative_Aptitude = await getQuestionsByCategory(client, ca_qa_total, 1, 1);
+			var Logical_Reasoning = await getQuestionsByCategory(client, ca_lr_total, 1, 2);
 			var Cognitive_Abilities = Quantitative_Aptitude.concat(Logical_Reasoning);
 
-			var Domain_Specific_Knowledge = await getQuestionsByCategory(client, 10, 2, 3);
-			var Hands_on_Coding = await getQuestionsByCategory(client, 10, 2, 4);
+			var Domain_Specific_Knowledge = await getQuestionsByCategory(client, tp_dsk_total, 2, 3);
+			var Hands_on_Coding = await getQuestionsByCategory(client, tp_hc_total, 2, 4);
 			var Technical_Proficiency = Domain_Specific_Knowledge.concat(Hands_on_Coding);
 
-			var English_Speaking = await getCompQuestionsByCategory(client, 0, 3, 5);
-			var English_Listening = await getCompQuestionsByCategory(client, 1, 3, 6);
-			var English_Reading = await getCompQuestionsByCategory(client, 2, 3, 7);
-			var English_Writing = await getCompQuestionsByCategory(client, 0, 3, 8);
+			var English_Speaking = await getCompQuestionsByCategory(client, cs_s_total, 3, 5);
+			var English_Listening = await getCompQuestionsByCategory(client, cs_l_total, 3, 6);
+			var English_Reading = await getCompQuestionsByCategory(client, cs_r_total, 3, 7);
+			var English_Writing = await getCompQuestionsByCategory(client, cs_w_total, 3, 8);
 			var Communication_Skills = English_Speaking.concat(English_Listening)
 				.concat(English_Reading)
 				.concat(English_Writing);
 			//Communication_Skills.sort((a, b) => a.comprehension_id - b.comprehension_id);
 
-			var Interpersonal_and_Team_work_Skills = await getQuestionsByCategory(client, 5, 4, 10);
-			var Adaptability_and_Continuous_Learning = await getQuestionsByCategory(client, 5, 4, 11);
-			var Project_Management_and_Time_Management = await getQuestionsByCategory(client, 5, 4, 12);
-			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(client, 5, 4, 13);
+			var Interpersonal_and_Team_work_Skills = await getQuestionsByCategory(client, pb_itws_total, 4, 10);
+			var Adaptability_and_Continuous_Learning = await getQuestionsByCategory(client, pb_acl_total, 4, 11);
+			var Project_Management_and_Time_Management = await getQuestionsByCategory(client, pb_pmtm_total, 4, 12);
+			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(client, pb_peip_total, 4, 13);
 
 			var Personality_and_Behavioral = Interpersonal_and_Team_work_Skills.concat(
 				Adaptability_and_Continuous_Learning
@@ -602,25 +620,25 @@ router.post('/generatepaper', async (req, res) => {
 					totalquestions: Cognitive_Abilities.length,
 					questions: Cognitive_Abilities,
 					testname: 'Cognitive Abilities',
-					duration: 30 * 60,
+					duration: ca_time * 60,
 				},
 				{
 					totalquestions: Technical_Proficiency.length,
 					questions: Technical_Proficiency,
 					testname: 'Technical Proficiency',
-					duration: 30 * 60,
+					duration: tp_time * 60,
 				},
 				{
 					totalquestions: Communication_Skills.length,
 					questions: Communication_Skills,
 					testname: 'Communication Skills',
-					duration: 45 * 60,
+					duration: cs_time * 60,
 				},
 				{
 					totalquestions: Personality_and_Behavioral.length,
 					questions: Personality_and_Behavioral,
 					testname: 'Personality and Behavioral',
-					duration: 30 * 60,
+					duration: pb_time * 60,
 				},
 			];
 			return sendOkResponse(res, paper);
