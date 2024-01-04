@@ -533,7 +533,7 @@ router.get('/gitAccessToken', async (req, res) => {
 		const data = await response.json();
 		res.json(data);
 		console.log(data);
-		sendOkResponse(res, data);
+		// sendOkResponse(res, data);
 	} catch (error) {
 		console.error(error);
 		sendInternalServerErrorResponse(res, 'Internal Server Error');
@@ -562,7 +562,7 @@ router.get('/gitUserData', async (req, res) => {
 		const data = await response.json();
 		res.json(data);
 		console.log(data);
-		sendOkResponse(res, data);
+		// sendOkResponse(res, data);
 	} catch (error) {
 		console.error(error);
 		sendInternalServerErrorResponse(res, 'Internal Server Error');
