@@ -1079,6 +1079,35 @@ router.get('/getconfig', async (req, res) => {
 	}
 });
 
+router.get('/questioncount', async (req, res) => {
+	const client = await pool.connect();
+
+	try {
+		const query = `
+            SELECT 
+                icap_subcategory_id,
+                COUNT(*) AS question_count
+            FROM 
+                scimic_questions 
+            GROUP BY 
+                icap_subcategory_id;
+        `;
+
+		const { rows } = await client.query(query);
+
+		if (rows.length > 0) {
+			return sendOkResponse(res, rows);
+		} else {
+			return sendErrorMessage(res, 'No question counts found');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+
 
 
 
