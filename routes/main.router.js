@@ -585,7 +585,7 @@ router.post('/generatepaper', async (req, res) => {
 				pb_pmtm_total,
 				pb_peip_total,
 				pb_time, } = config
-			console.log(config);
+			// console.log(config);
 
 			var Quantitative_Aptitude = await getQuestionsByCategory(client, ca_qa_total, 1, 1);
 			var Logical_Reasoning = await getQuestionsByCategory(client, ca_lr_total, 1, 2);
@@ -982,26 +982,42 @@ router.post('/updateconfig', async (req, res) => {
 
 	try {
 		if (
-			!ca_qa_total ||
-			!ca_lr_total ||
-			!ca_time ||
-			!tp_dsk_total ||
-			!tp_hc_total ||
-			!tp_time ||
-			!cs_s_total ||
-			!cs_w_total ||
-			!cs_l_total ||
-			!cs_r_total ||
-			!cs_time ||
-			!pb_itws_total ||
-			!pb_acl_total ||
-			!pb_pmtm_total ||
-			!pb_peip_total ||
-			!pb_time
+			ca_qa_total == null ||
+			ca_lr_total == null ||
+			ca_time == null ||
+			tp_dsk_total == null ||
+			tp_hc_total == null ||
+			tp_time == null ||
+			cs_s_total == null ||
+			cs_w_total == null ||
+			cs_l_total == null ||
+			cs_r_total == null ||
+			cs_time == null ||
+			pb_itws_total == null ||
+			pb_acl_total == null ||
+			pb_pmtm_total == null ||
+			pb_peip_total == null ||
+			pb_time == null ||
+			ca_qa_total === '' ||
+			ca_lr_total === '' ||
+			ca_time === '' ||
+			tp_dsk_total === '' ||
+			tp_hc_total === '' ||
+			tp_time === '' ||
+			cs_s_total === '' ||
+			cs_w_total === '' ||
+			cs_l_total === '' ||
+			cs_r_total === '' ||
+			cs_time === '' ||
+			pb_itws_total === '' ||
+			pb_acl_total === '' ||
+			pb_pmtm_total === '' ||
+			pb_peip_total === '' ||
+			pb_time === ''
 		) {
-			// console.log("All fields are not available");
 			return sendErrorMessage(res, 'Bad Configuration Request');
 		}
+
 
 		// console.log(req.body);
 
