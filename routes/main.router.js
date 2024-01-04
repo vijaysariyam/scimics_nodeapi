@@ -1106,7 +1106,9 @@ router.get('/questioncount', async (req, res) => {
             FROM 
                 scimic_questions 
             GROUP BY 
-                icap_subcategory_id;
+                icap_subcategory_id
+			ORDER BY 
+				icap_subcategory_id ASC;
         `;
 
 		const { rows } = await client.query(query);
