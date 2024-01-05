@@ -498,19 +498,28 @@ router.post('/getreports/:id', async (req, res) => {
 	try {
 		const id = req.params.id;
 		const query = `
-		SELECT * 
-		FROM 
-		icap_reports 
-		where user_id = $1`;
+            SELECT 
+                ir.*, su.firstname, su.lastname
+            FROM 
+                icap_reports ir
+            JOIN
+                scimic_user su ON ir.user_id = su.user_pk
+            AND
+                ir.user_id = $1`;
 		var { rows } = await client.query(query, [id]);
+
+		// console.log(rows);
 
 		return sendOkResponse(res, rows);
 	} catch (error) {
+		// console.log(error);
 		return sendInternalServerErrorResponse(res, error.message);
 	} finally {
 		client.release();
 	}
 });
+
+
 
 const githubClientId = '2e63a9cb2528d488121b';
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
