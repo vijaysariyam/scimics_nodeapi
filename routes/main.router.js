@@ -62,6 +62,7 @@ async function getCompQuestionsByCategory(client, noofcomquestions, catid, subca
 	    null as user_answer,
 	    sq.domain_id,
 		c.comprehension,
+		c.comprehension_pk,
 		sq.scimic_question_pk,
 		sq.question,
 		json_build_array(sq.option1, sq.option2, sq.option3, sq.option4) AS options, 
@@ -519,8 +520,6 @@ router.post('/getreports/:id', async (req, res) => {
 	}
 });
 
-
-
 const githubClientId = '2e63a9cb2528d488121b';
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
 // Change callback URL in Github OAuth accordingly.
@@ -578,7 +577,8 @@ router.post('/generatepaper', async (req, res) => {
 
 		if (rows.length == 1) {
 			const config = rows[0];
-			const { ca_qa_total,
+			const {
+				ca_qa_total,
 				ca_lr_total,
 				ca_time,
 				tp_dsk_total,
@@ -593,7 +593,8 @@ router.post('/generatepaper', async (req, res) => {
 				pb_acl_total,
 				pb_pmtm_total,
 				pb_peip_total,
-				pb_time, } = config
+				pb_time,
+			} = config;
 			// console.log(config);
 
 			var Quantitative_Aptitude = await getQuestionsByCategory(client, ca_qa_total, 1, 1);
@@ -616,7 +617,12 @@ router.post('/generatepaper', async (req, res) => {
 			var Interpersonal_and_Team_work_Skills = await getQuestionsByCategory(client, pb_itws_total, 4, 10);
 			var Adaptability_and_Continuous_Learning = await getQuestionsByCategory(client, pb_acl_total, 4, 11);
 			var Project_Management_and_Time_Management = await getQuestionsByCategory(client, pb_pmtm_total, 4, 12);
-			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(client, pb_peip_total, 4, 13);
+			var Professional_Etiquette_and_Interview_Preparedness = await getQuestionsByCategory(
+				client,
+				pb_peip_total,
+				4,
+				13
+			);
 
 			var Personality_and_Behavioral = Interpersonal_and_Team_work_Skills.concat(
 				Adaptability_and_Continuous_Learning
@@ -808,7 +814,6 @@ router.post('/validatepaper/:userid', async (req, res) => {
 // 	}
 // }
 
-
 router.post('/getcognitiveq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://parametr-1.onrender.com/parameter1';
@@ -917,7 +922,7 @@ router.post('/approveq', async (req, res) => {
 		icap_subcategory_id,
 		icap_qscategory_id,
 		comprehension_id,
-		domain_id
+		domain_id,
 	} = req.body;
 	try {
 		if (
@@ -952,7 +957,7 @@ router.post('/approveq', async (req, res) => {
 			icap_subcategory_id,
 			icap_qscategory_id,
 			comprehension_id,
-			domain_id
+			domain_id,
 		];
 		var { rows } = await client.query(query, values);
 		if (rows.length == 1) {
@@ -1027,7 +1032,6 @@ router.post('/updateconfig', async (req, res) => {
 			return sendErrorMessage(res, 'Bad Configuration Request');
 		}
 
-
 		// console.log(req.body);
 
 		var query = `UPDATE icap_config SET 
@@ -1083,7 +1087,6 @@ router.post('/updateconfig', async (req, res) => {
 	}
 });
 
-
 router.get('/getconfig', async (req, res) => {
 	const client = await pool.connect();
 
@@ -1133,9 +1136,5 @@ router.get('/questioncount', async (req, res) => {
 		client.release();
 	}
 });
-
-
-
-
 
 export default router;
