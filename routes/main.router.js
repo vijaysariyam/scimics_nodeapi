@@ -564,6 +564,7 @@ router.get('/gitUserData', async (req, res) => {
 		const data = await response.json();
 
 		if (response.ok) {
+			console.log('Received data:', data);
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorMessage(res, 'Failed to fetch GitHub user data');
