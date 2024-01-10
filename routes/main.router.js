@@ -300,7 +300,7 @@ router.post('/verifyotp', async (req, res) => {
 
 router.post('/login', async (req, res) => {
 	const client = await pool.connect();
-	const { email, password } = req.body;
+	const { email, password, user_type } = req.body;
 	try {
 		if (!email || !password) {
 			return sendErrorMessage(res, 'Bad Request');
@@ -313,7 +313,11 @@ router.post('/login', async (req, res) => {
 			return sendErrorMessage(res, 'Invalid credentials');
 		} else {
 			//delete userData.hashed_password;
-			return sendOkResponse(res, userData);
+			if (user_type == userData.user_type) {
+				return sendOkResponse(res, userData);
+			} else {
+				return sendErrorMessage(res, 'Invalid credentials');
+			}
 		}
 	} catch (error) {
 		return sendInternalServerErrorResponse(res, error.message);
@@ -321,6 +325,7 @@ router.post('/login', async (req, res) => {
 		client.release();
 	}
 });
+
 router.post('/updateuser', async (req, res) => {
 	const client = await pool.connect();
 	const { email, firstname, lastname, country_code, college_id, course_id, phone } = req.body;
@@ -973,6 +978,67 @@ router.post('/approveq', async (req, res) => {
 	}
 });
 
+router.post('/updateq/:id', async (req, res) => {
+	const client = await pool.connect();
+	const { question, option1, option2, option3, option4, answer } = req.body;
+	try {
+		if ((!req.params.id, !question || !option1 || !option2 || !option3 || !option4 || !answer)) {
+			return sendErrorMessage(res, 'Bad Request');
+		}
+
+		var query = `
+		UPDATE 
+		scimic_questions 
+		SET 
+		question = $1, 
+		option1 = $2, 
+		option2 = $3, 
+		option3 = $4, 
+		option4 = $5, 
+		answer = $6
+		WHERE scimic_question_pk = $7
+		RETURNING *`;
+		var values = [question, option1, option2, option3, option4, answer, req.params.id];
+		var { rows } = await client.query(query, values);
+		if (rows.length == 1) {
+			return sendOkResponse(res, []);
+		} else {
+			return sendErrorMessage(res, 'Invalid question');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+router.post('/deleteq/:id', async (req, res) => {
+	const client = await pool.connect();
+	try {
+		if (!req.params.id) {
+			return sendErrorMessage(res, 'Bad Request');
+		}
+
+		var query = `
+		DELETE FROM
+		scimic_questions 
+		
+		WHERE scimic_question_pk = $1
+		RETURNING *`;
+		var values = [req.params.id];
+		var { rows } = await client.query(query, values);
+		if (rows.length == 1) {
+			return sendOkResponse(res, []);
+		} else {
+			return sendErrorMessage(res, 'Invalid question');
+		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
 router.post('/updateconfig', async (req, res) => {
 	const client = await pool.connect();
 	const {
@@ -1130,6 +1196,47 @@ router.get('/questioncount', async (req, res) => {
 		} else {
 			return sendErrorMessage(res, 'No question counts found');
 		}
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+router.post('/getallquestionsbycategory', async (req, res) => {
+	const client = await pool.connect();
+	const { catid, subcatid } = req.body;
+	try {
+		const query = `
+		SELECT * FROM scimic_questions
+		WHERE icap_category_id = $1 AND icap_subcategory_id = $2
+		`;
+		const { rows } = await client.query(query, [catid, subcatid]);
+
+		return sendOkResponse(res, rows);
+	} catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+router.post('/getcategoryandsubcategory', async (req, res) => {
+	const client = await pool.connect();
+	try {
+		const query = `
+		SELECT json_object_agg(icap_category_name, subcategories) AS category_subcategories
+        FROM (
+        SELECT c.icap_category_name,
+           json_agg(s.icap_subcategory_name) AS subcategories
+        FROM icap_categories c
+        LEFT JOIN icap_subcategories s ON c.icap_category_pk = s.icap_category_id
+        GROUP BY c.icap_category_name
+        ) AS category_subcategory_agg
+		`;
+		const { rows } = await client.query(query);
+
+		return sendOkResponse(res, rows[0].category_subcategories);
 	} catch (error) {
 		return sendInternalServerErrorResponse(res, error.message);
 	} finally {
