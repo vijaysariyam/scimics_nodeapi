@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
 	res.send('Hello scimics api');
 });
 //////////////////////////////////////////////////////////////////////////
-import { sendOtpEmail, sendSMS, sendWelcomeEmail } from './services/emailjss.js';
+import { sendOtpEmail, sendSMS, sendWelcomeEmail, sendAccDetailsEmail } from './services/emailjss.js';
 //emailjs check
 app.post('/sendotpemail', async (req, res) => {
 	const { personname, email } = req.body;
@@ -74,6 +74,17 @@ app.post('/sendwelcomeemail', async (req, res) => {
 	const { personname, email } = req.body;
 	//const emailResult = await sendOtpEmail(personname, email);
 	const emailResult = await sendWelcomeEmail('vjmusk', 'invtechnologiesvijay2@gmail.com', 123123);
+	if (emailResult.success) {
+		res.status(200).json({ success: true, otp: emailResult.otp });
+	} else {
+		res.status(500).json({ success: false, message: 'Email sending failed' });
+	}
+});
+
+app.post('/sendaccdetailsemail', async (req, res) => {
+	const { personname, email } = req.body;
+	//const emailResult = await sendAccDetailsEmail(personname, email);
+	const emailResult = await sendAccDetailsEmail('Vivek', 'vivekinv28@gmail.com', 'q1@wer4');
 	if (emailResult.success) {
 		res.status(200).json({ success: true, otp: emailResult.otp });
 	} else {
