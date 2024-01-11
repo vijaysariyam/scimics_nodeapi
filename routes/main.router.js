@@ -1,4 +1,4 @@
-import { sendOtpEmail, sendSMS, sendWelcomeEmail } from '../services/emailjss.js';
+import { sendOtpEmail, sendSMS, sendWelcomeEmail, sendAccDetailsEmail } from '../services/emailjss.js';
 import { getOTP } from '../utils/globalfunc.js';
 
 import pool from '../utils/db.js';
@@ -1242,6 +1242,47 @@ router.post('/getcategoryandsubcategory', async (req, res) => {
 	} finally {
 		client.release();
 	}
+});
+
+router.post('/bulkuserupload', async (req, res) => {
+	const client = await pool.connect();
+	const array = req.body.excelData;
+	console.log(array);
+	const length = array.length;
+	let count = 0;
+	try {
+		for (let i = 0; i < length; i++) {
+			const { FirstName: firstname, LastName: lastname, Email: email, Phone: phone } = array[i];
+
+			if (!firstname || !lastname || !email || !phone) {
+				return sendErrorMessage(res, 'Bad Request');
+			}
+			var rows = await getUserByEmail(client, email);
+
+			if (rows.length == 0) {
+				var query = `INSERT INTO scimic_user 
+				(firstname, lastname, email, phone, hashed_password, country_code, signin_source , is_account_verified ) VALUES 
+				($1, $2, $3, $4, $5, $6, $7, $8)
+				RETURNING *`;
+				var values = [firstname, lastname, email, phone, '123456', '+91', 'EMAIL', false];
+				var { rows } = await client.query(query, values);
+				if (rows.length == 1) {
+					count++;
+					console.log('User created', i);
+					// const emailResult = await sendAccDetailsEmail(firstname, email, '123456');
+				}
+			}
+		}
+
+		return sendOkResponse(res, `Users created: ${count}/${length}`);
+	}
+	catch (error) {
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+
+
 });
 
 export default router;
