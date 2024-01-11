@@ -984,7 +984,7 @@ router.post('/updateq/:id', async (req, res) => {
 	try {
 		if (
 			(!req.params.id,
-			!question ||
+				!question ||
 				!option1 ||
 				!option2 ||
 				!option3 ||
@@ -1292,7 +1292,7 @@ router.post('/bulkuserupload', async (req, res) => {
 				if (rows.length == 1) {
 					count++;
 					console.log('User created', i);
-					// const emailResult = await sendAccDetailsEmail(firstname, email, '123456');
+					const emailResult = await sendAccDetailsEmail(firstname, email, '123456');
 				}
 			}
 		}
