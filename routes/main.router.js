@@ -980,9 +980,19 @@ router.post('/approveq', async (req, res) => {
 
 router.post('/updateq/:id', async (req, res) => {
 	const client = await pool.connect();
-	const { question, option1, option2, option3, option4, answer } = req.body;
+	const { question, option1, option2, option3, option4, answer, icap_category_id, icap_subcategory_id } = req.body;
 	try {
-		if ((!req.params.id, !question || !option1 || !option2 || !option3 || !option4 || !answer)) {
+		if (
+			(!req.params.id,
+			!question ||
+				!option1 ||
+				!option2 ||
+				!option3 ||
+				!option4 ||
+				!answer ||
+				!icap_category_id ||
+				!icap_subcategory_id)
+		) {
 			return sendErrorMessage(res, 'Bad Request');
 		}
 
@@ -995,10 +1005,23 @@ router.post('/updateq/:id', async (req, res) => {
 		option2 = $3, 
 		option3 = $4, 
 		option4 = $5, 
-		answer = $6
+		answer = $6,
+		icap_category_id = $8,
+		icap_subcategory_id = $9
+
 		WHERE scimic_question_pk = $7
 		RETURNING *`;
-		var values = [question, option1, option2, option3, option4, answer, req.params.id];
+		var values = [
+			question,
+			option1,
+			option2,
+			option3,
+			option4,
+			answer,
+			req.params.id,
+			icap_category_id,
+			icap_subcategory_id,
+		];
 		var { rows } = await client.query(query, values);
 		if (rows.length == 1) {
 			return sendOkResponse(res, []);
@@ -1021,7 +1044,7 @@ router.post('/deleteq/:id', async (req, res) => {
 
 		var query = `
 		DELETE FROM
-		scimic_questions 
+		scimic_questions
 		
 		WHERE scimic_question_pk = $1
 		RETURNING *`;
@@ -1208,8 +1231,10 @@ router.post('/getallquestionsbycategory', async (req, res) => {
 	const { catid, subcatid } = req.body;
 	try {
 		const query = `
-		SELECT * FROM scimic_questions
-		WHERE icap_category_id = $1 AND icap_subcategory_id = $2
+		SELECT * FROM scimic_questions q
+		LEFT JOIN comprehension c
+		ON c.comprehension_pk = q.comprehension_id
+		WHERE q.icap_category_id = $1 AND q.icap_subcategory_id = $2
 		`;
 		const { rows } = await client.query(query, [catid, subcatid]);
 
@@ -1225,18 +1250,16 @@ router.post('/getcategoryandsubcategory', async (req, res) => {
 	const client = await pool.connect();
 	try {
 		const query = `
-		SELECT json_object_agg(icap_category_name, subcategories) AS category_subcategories
-        FROM (
-        SELECT c.icap_category_name,
-           json_agg(s.icap_subcategory_name) AS subcategories
-        FROM icap_categories c
-        LEFT JOIN icap_subcategories s ON c.icap_category_pk = s.icap_category_id
-        GROUP BY c.icap_category_name
-        ) AS category_subcategory_agg
+	   SELECT c.icap_category_pk,
+       c.icap_category_name,
+       json_agg(json_build_object('sub_category_pk', s.icap_subcategory_pk, 'sub_category_name', s.icap_subcategory_name)) AS subcategories
+       FROM icap_categories c
+       LEFT JOIN icap_subcategories s ON c.icap_category_pk = s.icap_category_id
+       GROUP BY c.icap_category_pk, c.icap_category_name
 		`;
 		const { rows } = await client.query(query);
 
-		return sendOkResponse(res, rows[0].category_subcategories);
+		return sendOkResponse(res, rows);
 	} catch (error) {
 		return sendInternalServerErrorResponse(res, error.message);
 	} finally {
