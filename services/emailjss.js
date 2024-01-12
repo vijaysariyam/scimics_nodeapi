@@ -39,6 +39,26 @@ export const sendWelcomeEmail = async (personname, to_email) => {
   }
 };
 
+export const sendAccDetailsEmail = async (personname, to_email, generated_temporary_password) => {
+  try {
+    const response = await emailjs.send("service_famgwp7", "template_uykw928", {
+      personname: personname,
+      to_email: to_email,
+      user_email: to_email,
+      generated_temporary_password: generated_temporary_password,
+
+    },
+      {
+        publicKey: 'Tjs0mNl5Z2CShIW1V',
+        privateKey: 'cVMXQDcfM74qzjUvgWwg1',
+      });
+    return { success: true };
+  } catch (err) {
+    console.log("FAILED...", err);
+    return { success: false, message: "Email sending failed" };
+  }
+}
+
 export const sendSMS = async (mobile, username, otp) => {
   try {
     const apiUrl = `http://colourmoontraining.com/otp_sms/sendsms?user_id=invtechnologies&mobile=${mobile}&message=Dear ${username} your one time password (OTP) ${otp} Regards CMTOTP`;
