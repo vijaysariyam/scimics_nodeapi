@@ -1279,15 +1279,19 @@ function getPassword(length) {
 
 router.post('/bulkuserupload', async (req, res) => {
 	const client = await pool.connect();
-	const array = req.body.excelData;
-	console.log(array);
+	const request = req.body;
+	// console.log(request);
+	const college_id = request.collegeId;
+	const course_id = request.courseId;
+	const array = request.excelData;
+	// console.log(array);
 	const length = array.length;
 	let count = 0;
 	try {
 		for (let i = 0; i < length; i++) {
 			const { FirstName: firstname, LastName: lastname, Email: email, Phone: phone } = array[i];
 
-			if (!firstname || !lastname || !email || !phone) {
+			if (!firstname || !lastname || !email || !phone || !college_id || !course_id) {
 				return sendErrorMessage(res, 'Bad Request');
 			}
 			var rows = await getUserByEmail(client, email);
@@ -1297,14 +1301,14 @@ router.post('/bulkuserupload', async (req, res) => {
 				const randomPassword = getPassword(8);
 
 				var query = `INSERT INTO scimic_user 
-				(firstname, lastname, email, phone, hashed_password, country_code, signin_source , is_account_verified ) VALUES 
-				($1, $2, $3, $4, $5, $6, $7, $8)
+				(firstname, lastname, email, phone, hashed_password, country_code, signin_source , is_account_verified, college_id, course_id ) VALUES 
+				($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 				RETURNING *`;
-				var values = [firstname, lastname, email, phone, randomPassword, '+91', 'EMAIL', false];
+				var values = [firstname, lastname, email, phone, randomPassword, '+91', 'EMAIL', false, college_id, course_id];
 				var { rows } = await client.query(query, values);
 				if (rows.length == 1) {
 					count++;
-					console.log('User created', i);
+					// console.log('User created', i);
 					const emailResult = await sendAccDetailsEmail(firstname, email, randomPassword);
 				}
 			}
