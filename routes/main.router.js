@@ -1267,6 +1267,13 @@ router.post('/getcategoryandsubcategory', async (req, res) => {
 	}
 });
 
+
+const generateRandomPassword = () => {
+	const length = 6;
+	const randomString = Math.random().toString(36).slice(-length);
+	return randomString;
+};
+
 router.post('/bulkuserupload', async (req, res) => {
 	const client = await pool.connect();
 	const array = req.body.excelData;
