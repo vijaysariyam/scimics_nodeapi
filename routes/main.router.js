@@ -1265,11 +1265,17 @@ router.post('/getcategoryandsubcategory', async (req, res) => {
 });
 
 
-const generateRandomPassword = () => {
-	const length = 6;
-	const randomString = Math.random().toString(36).slice(-length);
-	return randomString;
-};
+function getPassword(length) {
+	const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&?';
+	let password = '';
+
+	for (let i = 0; i < length; i++) {
+		const randomIndex = Math.floor(Math.random() * charset.length);
+		password += charset[randomIndex];
+	}
+
+	return password;
+}
 
 router.post('/bulkuserupload', async (req, res) => {
 	const client = await pool.connect();
@@ -1287,16 +1293,19 @@ router.post('/bulkuserupload', async (req, res) => {
 			var rows = await getUserByEmail(client, email);
 
 			if (rows.length == 0) {
+
+				const randomPassword = getPassword(8);
+
 				var query = `INSERT INTO scimic_user 
 				(firstname, lastname, email, phone, hashed_password, country_code, signin_source , is_account_verified ) VALUES 
 				($1, $2, $3, $4, $5, $6, $7, $8)
 				RETURNING *`;
-				var values = [firstname, lastname, email, phone, '123456', '+91', 'EMAIL', false];
+				var values = [firstname, lastname, email, phone, randomPassword, '+91', 'EMAIL', false];
 				var { rows } = await client.query(query, values);
 				if (rows.length == 1) {
 					count++;
 					console.log('User created', i);
-					const emailResult = await sendAccDetailsEmail(firstname, email, '123456');
+					const emailResult = await sendAccDetailsEmail(firstname, email, randomPassword);
 				}
 			}
 		}
