@@ -519,7 +519,8 @@ router.post('/getreports/:id', async (req, res) => {
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
 const githubClientId = '2e63a9cb2528d488121b';
 
-router.get('/gitAccessToken', async (req, res) => {
+
+router.get('/gitUserData', async (req, res) => {
 	const params = `?client_id=${githubClientId}&client_secret=${githubClientSecret}&code=${req.query.code}`;
 
 	try {
@@ -531,43 +532,26 @@ router.get('/gitAccessToken', async (req, res) => {
 		});
 
 		const data = await response.json();
-		res.status(200).json(data);
-		console.log(data);
-		// sendOkResponse(res, data);
-	} catch (error) {
-		console.error(error);
-		sendInternalServerErrorResponse(res, 'Internal Server Error');
-	}
-});
 
-router.get('/gitUserData', async (req, res) => {
-	const authorizationHeader = req.headers.authorization;
+		if (data.access_token) {
+			// Fetch user data using the obtained access token
+			const userDataResponse = await fetch('https://api.github.com/user', {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${data.access_token}`,
+				},
+			});
 
-	// Check if the Authorization header is present
-	if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
-		return sendErrorResponse(res, 'Unauthorized - Missing or invalid token');
-	}
+			const userData = await userDataResponse.json();
 
-	const accessToken = authorizationHeader.substring(7); // Remove 'Bearer ' from the token
-	console.log('Received Authorization Header:', accessToken);
-
-	const githubApiUrl = 'https://api.github.com/user';
-
-	try {
-		const response = await fetch(githubApiUrl, {
-			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-			},
-		});
-
-		const data = await response.json();
-
-		if (response.ok) {
-			console.log('Received data:', data);
-			return sendOkResponse(res, data);
+			// Include both access token and user data in the response
+			res.status(200).json({
+				access_token: data.access_token,
+				user_data: userData,
+			});
 		} else {
-			return sendErrorMessage(res, 'Failed to fetch GitHub user data');
+			// Handle case where access token is not received
+			return sendErrorMessage(res, 'Failed to fetch GitHub access token');
 		}
 	} catch (error) {
 		console.error(error);
@@ -576,51 +560,6 @@ router.get('/gitUserData', async (req, res) => {
 });
 
 
-
-
-
-// Change callback URL in Github OAuth accordingly.
-// router.get('/github/callback', async (req, res) => {
-// 	try {
-// 		const response = await axios.post(
-// 			'https://github.com/login/oauth/access_token',
-// 			{
-// 				client_id: githubClientId,
-// 				client_secret: githubClientSecret,
-// 				code: req.query.code,
-// 			},
-// 			{
-// 				headers: {
-// 					Accept: 'application/json',
-// 				},
-// 			}
-// 		);
-
-// 		const accessToken = response.data.access_token;
-
-// 		// Use access token to fetch user info
-// 		const userProfile = await axios.get('https://api.github.com/user', {
-// 			headers: {
-// 				Authorization: `Bearer ${accessToken}`,
-// 				'User-Agent': 'Scimics',
-// 			},
-// 		});
-
-// 		const userData = {
-// 			github_id: userProfile.data.github_id,
-// 			avatarUrl: userProfile.data.avatar_url,
-// 			name: userProfile.data.name,
-// 			// Add more fields as needed
-// 		};
-
-// 		// You can now use the 'userData' object as per your requirements
-// 		//console.log(userProfile);
-// 		res.send(userData);
-// 	} catch (err) {
-// 		console.error(err);
-// 		res.status(500).send('Internal Server Error');
-// 	}
-// });
 
 router.post('/generatepaper', async (req, res) => {
 	const client = await pool.connect();
