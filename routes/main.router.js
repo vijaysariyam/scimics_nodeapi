@@ -2,8 +2,11 @@ import { sendOtpEmail, sendSMS, sendWelcomeEmail, sendAccDetailsEmail } from '..
 import { getOTP } from '../utils/globalfunc.js';
 
 import pool from '../utils/db.js';
-import express from 'express';
+import express, { response } from 'express';
 import axios from 'axios';
+
+const fetch = (...args) =>
+	import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 import { sendErrorMessage, sendInternalServerErrorResponse, sendOkResponse } from '../utils/response.js';
 
@@ -525,50 +528,51 @@ router.post('/getreports/:id', async (req, res) => {
 	}
 });
 
-const githubClientId = '2e63a9cb2528d488121b';
+
 const githubClientSecret = '016c4fedd4f952e32f4433ec78a1a0e65fbbb3f2';
-// Change callback URL in Github OAuth accordingly.
-router.get('/github/callback', async (req, res) => {
+const githubClientId = '2e63a9cb2528d488121b';
+
+
+router.get('/gitUserData', async (req, res) => {
+	const params = `?client_id=${githubClientId}&client_secret=${githubClientSecret}&code=${req.query.code}`;
+
 	try {
-		const response = await axios.post(
-			'https://github.com/login/oauth/access_token',
-			{
-				client_id: githubClientId,
-				client_secret: githubClientSecret,
-				code: req.query.code,
-			},
-			{
-				headers: {
-					Accept: 'application/json',
-				},
-			}
-		);
-
-		const accessToken = response.data.access_token;
-
-		// Use access token to fetch user info
-		const userProfile = await axios.get('https://api.github.com/user', {
+		const response = await fetch(`https://github.com/login/oauth/access_token${params}`, {
+			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				'User-Agent': 'Scimics',
+				Accept: 'application/json',
 			},
 		});
 
-		const userData = {
-			github_id: userProfile.data.github_id,
-			avatarUrl: userProfile.data.avatar_url,
-			name: userProfile.data.name,
-			// Add more fields as needed
-		};
+		const data = await response.json();
 
-		// You can now use the 'userData' object as per your requirements
-		//console.log(userProfile);
-		res.send(userData);
-	} catch (err) {
-		console.error(err);
-		res.status(500).send('Internal Server Error');
+		if (data.access_token) {
+			// Fetch user data using the obtained access token
+			const userDataResponse = await fetch('https://api.github.com/user', {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${data.access_token}`,
+				},
+			});
+
+			const userData = await userDataResponse.json();
+
+			// Include both access token and user data in the response
+			res.status(200).json({
+				access_token: data.access_token,
+				user_data: userData,
+			});
+		} else {
+			// Handle case where access token is not received
+			return sendErrorMessage(res, 'Failed to fetch GitHub access token');
+		}
+	} catch (error) {
+		console.error(error);
+		return sendInternalServerErrorResponse(res, 'Internal Server Error');
 	}
 });
+
+
 
 router.post('/generatepaper', async (req, res) => {
 	const client = await pool.connect();
@@ -841,12 +845,11 @@ router.post('/getcognitiveq', async (req, res) => {
 router.post('/gettechnicalq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://scimics.onrender.com/parameter2';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+		const { data } = await axios.post(jsonUrl, req.body);
 
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
@@ -860,12 +863,10 @@ router.post('/gettechnicalq', async (req, res) => {
 router.post('/getcommunicationq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://scimics-3.onrender.com/parameter3';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
-
+		const { data } = await axios.post(jsonUrl, req.body);
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
@@ -879,12 +880,10 @@ router.post('/getcommunicationq', async (req, res) => {
 router.post('/getpersonalityq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://scimics-4.onrender.com/parameter4';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
-
+		const { data } = await axios.post(jsonUrl, req.body);
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
@@ -898,12 +897,10 @@ router.post('/getpersonalityq', async (req, res) => {
 router.post('/get4parameterq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://mcq4.onrender.com/get_mcq4';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
-
+		const { data } = await axios.post(jsonUrl, req.body);
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
