@@ -1291,6 +1291,8 @@ router.post('/bulkuserupload', async (req, res) => {
 		for (let i = 0; i < length; i++) {
 			const { FirstName: firstname, LastName: lastname, Email: email, Phone: phone } = array[i];
 
+			//college name //course //department
+
 			if (!firstname || !lastname || !email || !phone || !college_id || !course_id) {
 				return sendErrorMessage(res, 'Bad Request');
 			}
