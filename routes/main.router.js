@@ -1410,7 +1410,7 @@ router.get('/getusersbycollege', async (req, res) => {
 	}
 });
 
-router.post('/updateUserBlockedStatus', async (req, res) => {
+router.post('/updateuserblockedstatus', async (req, res) => {
 	const client = await pool.connect();
 
 	try {
@@ -1438,7 +1438,7 @@ router.post('/updateUserBlockedStatus', async (req, res) => {
 			user_id: rows[0].user_pk,
 		};
 
-		return res.json({ message: 'User blocked status updated successfully', user: updatedUser });
+		return sendOkResponse(res, updatedUser);
 	} catch (error) {
 		console.error(error);
 		return sendInternalServerErrorResponse(res, error.message);
