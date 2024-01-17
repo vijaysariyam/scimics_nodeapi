@@ -1327,4 +1327,87 @@ router.post('/bulkuserupload', async (req, res) => {
 
 });
 
+router.get('/getusersbycollege', async (req, res) => {
+	const client = await pool.connect();
+
+	try {
+		const collegesQuery = 'SELECT * FROM scimic_college';
+		const collegesData = await client.query(collegesQuery);
+
+		const collegesResult = await Promise.all(
+			collegesData.rows.map(async (college) => {
+				const departmentsQuery = 'SELECT * FROM scimic_department WHERE college_id = $1';
+				const departmentsData = await client.query(departmentsQuery, [college.college_pk]);
+
+				const departmentsResult = await Promise.all(
+					departmentsData.rows.map(async (department) => {
+						const coursesQuery = 'SELECT * FROM scimic_course WHERE department_id = $1';
+						const coursesData = await client.query(coursesQuery, [department.department_pk]);
+
+						const coursesResult = await Promise.all(
+							coursesData.rows.map(async (course) => {
+								const usersQuery = 'SELECT * FROM scimic_user WHERE course_id = $1';
+								const usersData = await client.query(usersQuery, [course.course_pk]);
+
+								const uData = usersData.rows.map((user) => ({
+									user_id: user.user_pk,
+									first_name: user.firstname,
+									last_name: user.lastname,
+									email: user.email,
+									is_blocked: user.is_blocked,
+								}));
+
+								return {
+									course_id: course.course_pk,
+									course_name: course.course_name,
+									u_data: uData,
+								};
+							})
+						);
+
+						return {
+							department_id: department.department_pk,
+							department_name: department.department_name,
+							c_data: coursesResult,
+						};
+					})
+				);
+
+				return {
+					college_id: college.college_pk,
+					college_name: college.college_name,
+					d_data: departmentsResult,
+				};
+			})
+		);
+
+		const finalResponse = collegesResult.map((collegeResult) => ({
+			college_id: collegeResult.college_id,
+			college_name: collegeResult.college_name,
+			d_data: collegeResult.d_data.map((departmentResult) => ({
+				department_id: departmentResult.department_id,
+				department_name: departmentResult.department_name,
+				c_data: departmentResult.c_data.map((courseResult) => ({
+					course_id: courseResult.course_id,
+					course_name: courseResult.course_name,
+					u_data: courseResult.u_data.map((userData) => ({
+						user_id: userData.user_id,
+						first_name: userData.first_name,
+						last_name: userData.last_name,
+						email: userData.email,
+						is_blocked: userData.is_blocked,
+					})),
+				})),
+			})),
+		}));
+
+		return res.json(finalResponse);
+	} catch (error) {
+		console.error(error);
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
 export default router;
