@@ -8,7 +8,7 @@ import axios from 'axios';
 const fetch = (...args) =>
 	import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-import { sendErrorMessage, sendInternalServerErrorResponse, sendOkResponse } from '../utils/response.js';
+import { sendErrorMessage, sendInternalServerErrorResponse, sendOkResponse, sendBadRequestResponse } from '../utils/response.js';
 
 const router = express.Router();
 
@@ -1402,6 +1402,43 @@ router.get('/getusersbycollege', async (req, res) => {
 		}));
 
 		return res.json(finalResponse);
+	} catch (error) {
+		console.error(error);
+		return sendInternalServerErrorResponse(res, error.message);
+	} finally {
+		client.release();
+	}
+});
+
+router.post('/updateUserBlockedStatus', async (req, res) => {
+	const client = await pool.connect();
+
+	try {
+		const { user_id, is_blocked } = req.body;
+
+		if (user_id === undefined || is_blocked === undefined) {
+			return sendBadRequestResponse(res, error.message);;
+		}
+
+		const updateUserQuery = `
+		UPDATE scimic_user
+		SET is_blocked = $1
+		WHERE user_pk = $2
+		RETURNING *;
+	  `;
+
+		const { rows } = await client.query(updateUserQuery, [is_blocked, user_id]);
+
+		if (rows.length === 0) {
+			return res.status(404).json({ error: 'User not found' });
+		}
+
+		const updatedUser = {
+			is_blocked: rows[0].is_blocked,
+			user_id: rows[0].user_pk,
+		};
+
+		return res.json({ message: 'User blocked status updated successfully', user: updatedUser });
 	} catch (error) {
 		console.error(error);
 		return sendInternalServerErrorResponse(res, error.message);
