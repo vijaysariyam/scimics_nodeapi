@@ -1277,6 +1277,47 @@ function getPassword(length) {
 	return password;
 }
 
+async function getOrCreateCollege(client, collegeName) {
+	const existingCollege = await getCollegeByName(client, collegeName);
+
+	if (existingCollege) {
+		return existingCollege.college_pk;
+	} else {
+		const { rows } = await client.query('INSERT INTO scimic_college (college_name) VALUES ($1) RETURNING college_pk', [collegeName]);
+		return rows[0].college_pk;
+	}
+}
+
+
+async function getOrCreateDepartment(client, departmentName, college_id) {
+	const existingDepartment = await getDepartmentByNameAndCollege(client, departmentName, college_id);
+
+	if (existingDepartment) {
+		return existingDepartment.department_pk;
+	} else {
+		const { rows } = await client.query(
+			'INSERT INTO scimic_department (department_name, college_id) VALUES ($1, $2) RETURNING department_pk',
+			[departmentName, college_id]
+		);
+		return rows[0].department_pk;
+	}
+}
+
+
+async function getOrCreateCourse(client, courseName, department_id) {
+	const existingCourse = await getCourseByNameAndDepartment(client, courseName, department_id);
+
+	if (existingCourse) {
+		return existingCourse.course_pk;
+	} else {
+		const { rows } = await client.query(
+			'INSERT INTO scimic_course (course_name, department_id) VALUES ($1, $2) RETURNING course_pk',
+			[courseName, department_id]
+		);
+		return rows[0].course_pk;
+	}
+}
+
 router.post('/bulkuserupload', async (req, res) => {
 	const client = await pool.connect();
 	const request = req.body;
@@ -1295,28 +1336,26 @@ router.post('/bulkuserupload', async (req, res) => {
 				Course: courseName,
 			} = array[i];
 
-			// Check if college exists; if not, create it
 			const college_id = await getOrCreateCollege(client, collegeName);
-
-			// Check if department exists within the given college; if not, create it
 			const department_id = await getOrCreateDepartment(client, departmentName, college_id);
-
-			// Check if course exists within the given department; if not, create it
 			const course_id = await getOrCreateCourse(client, courseName, department_id);
 
 			if (!firstname || !lastname || !email || !phone || !college_id || !department_id || !course_id) {
 				return sendErrorMessage(res, 'Bad Request');
 			}
 
-			const rows = await getUserByEmail(client, email);
+			const existingUser = await getUserByEmail(client, email);
 
-			if (rows.length === 0) {
+			if (existingUser.length === 0) {
 				const randomPassword = getPassword(8);
 
-				const query = `INSERT INTO scimic_user 
-			(firstname, lastname, email, phone, hashed_password, country_code, signin_source, is_account_verified, college_id, department_id, course_id) 
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-			RETURNING *`;
+				const query = `
+                    INSERT INTO scimic_user 
+                        (firstname, lastname, email, phone, hashed_password, country_code, signin_source, is_account_verified, college_id, department_id, course_id) 
+                    VALUES 
+                        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    RETURNING *
+                `;
 
 				const values = [
 					firstname,
@@ -1343,75 +1382,37 @@ router.post('/bulkuserupload', async (req, res) => {
 
 		return sendOkResponse(res, `Users created: ${count}/${array.length}`);
 	} catch (error) {
+		console.error(error);
 		return sendInternalServerErrorResponse(res, error.message);
 	} finally {
 		client.release();
 	}
 });
 
-// Helper function to get or create a college
-async function getOrCreateCollege(client, collegeName) {
-	const existingCollege = await getCollegeByName(client, collegeName);
 
-	if (existingCollege) {
-		return existingCollege.college_pk;
-	} else {
-		const { rows } = await client.query('INSERT INTO scimic_college (college_name) VALUES ($1) RETURNING college_pk', [collegeName]);
-		return rows[0].college_pk;
-	}
-}
 
-// Helper function to get or create a department within a college
-async function getOrCreateDepartment(client, departmentName, college_id) {
-	const existingDepartment = await getDepartmentByNameAndCollege(client, departmentName, college_id);
 
-	if (existingDepartment) {
-		return existingDepartment.department_pk;
-	} else {
-		const { rows } = await client.query(
-			'INSERT INTO scimic_department (department_name, college_id) VALUES ($1, $2) RETURNING department_pk',
-			[departmentName, college_id]
-		);
-		return rows[0].department_pk;
-	}
-}
 
-// Helper function to get or create a course within a department
-async function getOrCreateCourse(client, courseName, department_id) {
-	const existingCourse = await getCourseByNameAndDepartment(client, courseName, department_id);
+// async function getCollegeByName(client, collegeName) {
+// 	const { rows } = await client.query('SELECT * FROM scimic_college WHERE college_name = $1', [collegeName]);
+// 	return rows[0];
+// }
 
-	if (existingCourse) {
-		return existingCourse.course_pk;
-	} else {
-		const { rows } = await client.query(
-			'INSERT INTO scimic_course (course_name, department_id) VALUES ($1, $2) RETURNING course_pk',
-			[courseName, department_id]
-		);
-		return rows[0].course_pk;
-	}
-}
+// async function getDepartmentByNameAndCollege(client, departmentName, college_id) {
+// 	const { rows } = await client.query('SELECT * FROM scimic_department WHERE department_name = $1 AND college_id = $2', [
+// 		departmentName,
+// 		college_id,
+// 	]);
+// 	return rows[0];
+// }
 
-// Helper functions to retrieve existing records
-async function getCollegeByName(client, collegeName) {
-	const { rows } = await client.query('SELECT * FROM scimic_college WHERE college_name = $1', [collegeName]);
-	return rows[0];
-}
-
-async function getDepartmentByNameAndCollege(client, departmentName, college_id) {
-	const { rows } = await client.query('SELECT * FROM scimic_department WHERE department_name = $1 AND college_id = $2', [
-		departmentName,
-		college_id,
-	]);
-	return rows[0];
-}
-
-async function getCourseByNameAndDepartment(client, courseName, department_id) {
-	const { rows } = await client.query('SELECT * FROM scimic_course WHERE course_name = $1 AND department_id = $2', [
-		courseName,
-		department_id,
-	]);
-	return rows[0];
-}
+// async function getCourseByNameAndDepartment(client, courseName, department_id) {
+// 	const { rows } = await client.query('SELECT * FROM scimic_course WHERE course_name = $1 AND department_id = $2', [
+// 		courseName,
+// 		department_id,
+// 	]);
+// 	return rows[0];
+// }
 
 
 
