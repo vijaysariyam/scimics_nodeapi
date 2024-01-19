@@ -1357,6 +1357,12 @@ router.post('/bulkuserupload', async (req, res) => {
 				Course: courseName,
 			} = array[i];
 
+			// Check if any required value is undefined
+			if (![firstname, lastname, email, phone, collegeName, departmentName, courseName].every(Boolean)) {
+				console.log('Skipping user due to missing or undefined data:', array[i]);
+				continue; // Skip to the next iteration if any required data is missing or undefined
+			}
+
 			const college_id = await getOrCreateCollege(client, collegeName);
 			const department_id = await getOrCreateDepartment(client, departmentName, college_id);
 			const course_id = await getOrCreateCourse(client, courseName, department_id);
