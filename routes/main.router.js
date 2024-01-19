@@ -1290,13 +1290,15 @@ async function getDepartmentByNameAndCollege(client, departmentName, college_id)
 	return rows[0];
 }
 
-async function getCourseByNameAndDepartment(client, courseName, department_id) {
-	const { rows } = await client.query('SELECT * FROM scimic_course WHERE course_name = $1 AND department_id = $2', [
-		courseName,
-		department_id,
-	]);
+async function getCourseByNameAndDepartmentAndCollege(client, courseName, department_id, college_id) {
+	const { rows } = await client.query(
+		'SELECT * FROM scimic_course WHERE course_name = $1 AND department_id = $2 AND college_pk = $3',
+		[courseName, department_id, college_id]
+	);
 	return rows[0];
 }
+
+// Existing functions...
 
 async function getOrCreateCollege(client, collegeName) {
 	const existingCollege = await getCollegeByName(client, collegeName);
@@ -1341,17 +1343,18 @@ async function getOrCreateDepartment(client, departmentName, college_id) {
 	}
 }
 
-async function getOrCreateCourse(client, courseName, department_id) {
-	const existingCourse = await getCourseByNameAndDepartment(client, courseName, department_id);
+async function getOrCreateCourse(client, courseName, department_id, college_id) {
+	const existingCourse = await getCourseByNameAndDepartmentAndCollege(client, courseName, department_id, college_id);
 
 	if (existingCourse) {
 		console.log(`Course "${courseName}" already exists. Returning existing course_id: ${existingCourse.course_pk}`);
 		return existingCourse.course_pk;
 	} else {
 		console.log(`Course "${courseName}" not found. Creating a new course.`);
+
 		const { rows } = await client.query(
-			'INSERT INTO scimic_course (course_name, department_id) VALUES ($1, $2) RETURNING course_pk',
-			[courseName, department_id]
+			'INSERT INTO scimic_course (college_pk, course_name, department_id) VALUES ($1, $2, $3) RETURNING course_pk',
+			[college_id, courseName, department_id]
 		);
 
 		if (rows.length === 1) {
@@ -1364,6 +1367,8 @@ async function getOrCreateCourse(client, courseName, department_id) {
 	}
 }
 
+
+// Existing code...
 
 router.post('/bulkuserupload', async (req, res) => {
 	const client = await pool.connect();
@@ -1383,7 +1388,6 @@ router.post('/bulkuserupload', async (req, res) => {
 				Course: courseName,
 			} = array[i];
 
-			// Check if any required value is undefined
 			if (![firstname, lastname, email, phone, collegeName, departmentName, courseName].every(Boolean)) {
 				console.log('Skipping user due to missing or undefined data:', array[i]);
 				continue; // Skip to the next iteration if any required data is missing or undefined
@@ -1391,7 +1395,7 @@ router.post('/bulkuserupload', async (req, res) => {
 
 			const college_id = await getOrCreateCollege(client, collegeName);
 			const department_id = await getOrCreateDepartment(client, departmentName, college_id);
-			const course_id = await getOrCreateCourse(client, courseName, department_id);
+			const course_id = await getOrCreateCourse(client, courseName, department_id, college_id);
 
 			if (!firstname || !lastname || !email || !phone || !college_id || !department_id || !course_id) {
 				return sendErrorMessage(res, 'Bad Request');
