@@ -1277,6 +1277,27 @@ function getPassword(length) {
 	return password;
 }
 
+async function getCollegeByName(client, collegeName) {
+	const { rows } = await client.query('SELECT * FROM scimic_college WHERE college_name = $1', [collegeName]);
+	return rows[0];
+}
+
+async function getDepartmentByNameAndCollege(client, departmentName, college_id) {
+	const { rows } = await client.query('SELECT * FROM scimic_department WHERE department_name = $1 AND college_id = $2', [
+		departmentName,
+		college_id,
+	]);
+	return rows[0];
+}
+
+async function getCourseByNameAndDepartment(client, courseName, department_id) {
+	const { rows } = await client.query('SELECT * FROM scimic_course WHERE course_name = $1 AND department_id = $2', [
+		courseName,
+		department_id,
+	]);
+	return rows[0];
+}
+
 async function getOrCreateCollege(client, collegeName) {
 	const existingCollege = await getCollegeByName(client, collegeName);
 
@@ -1351,11 +1372,11 @@ router.post('/bulkuserupload', async (req, res) => {
 
 				const query = `
                     INSERT INTO scimic_user 
-                        (firstname, lastname, email, phone, hashed_password, country_code, signin_source, is_account_verified, college_id, department_id, course_id) 
+					(firstname, lastname, email, phone, hashed_password, country_code, signin_source, is_account_verified, college_id, department_id, course_id) 
                     VALUES 
-                        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+					($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                     RETURNING *
-                `;
+					`;
 
 				const values = [
 					firstname,
@@ -1388,31 +1409,6 @@ router.post('/bulkuserupload', async (req, res) => {
 		client.release();
 	}
 });
-
-
-
-
-
-// async function getCollegeByName(client, collegeName) {
-// 	const { rows } = await client.query('SELECT * FROM scimic_college WHERE college_name = $1', [collegeName]);
-// 	return rows[0];
-// }
-
-// async function getDepartmentByNameAndCollege(client, departmentName, college_id) {
-// 	const { rows } = await client.query('SELECT * FROM scimic_department WHERE department_name = $1 AND college_id = $2', [
-// 		departmentName,
-// 		college_id,
-// 	]);
-// 	return rows[0];
-// }
-
-// async function getCourseByNameAndDepartment(client, courseName, department_id) {
-// 	const { rows } = await client.query('SELECT * FROM scimic_course WHERE course_name = $1 AND department_id = $2', [
-// 		courseName,
-// 		department_id,
-// 	]);
-// 	return rows[0];
-// }
 
 
 
