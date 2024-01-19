@@ -1302,42 +1302,68 @@ async function getOrCreateCollege(client, collegeName) {
 	const existingCollege = await getCollegeByName(client, collegeName);
 
 	if (existingCollege) {
+		console.log(`College "${collegeName}" already exists. Returning existing college_id: ${existingCollege.college_pk}`);
 		return existingCollege.college_pk;
 	} else {
+		console.log(`College "${collegeName}" not found. Creating a new college.`);
 		const { rows } = await client.query('INSERT INTO scimic_college (college_name) VALUES ($1) RETURNING college_pk', [collegeName]);
-		return rows[0].college_pk;
+
+		if (rows.length === 1) {
+			console.log(`New college "${collegeName}" created with college_id: ${rows[0].college_pk}`);
+			return rows[0].college_pk;
+		} else {
+			console.error(`Error creating college "${collegeName}"`);
+			return null; // Handle the case where college creation fails
+		}
 	}
 }
-
 
 async function getOrCreateDepartment(client, departmentName, college_id) {
 	const existingDepartment = await getDepartmentByNameAndCollege(client, departmentName, college_id);
 
 	if (existingDepartment) {
+		console.log(`Department "${departmentName}" already exists. Returning existing department_id: ${existingDepartment.department_pk}`);
 		return existingDepartment.department_pk;
 	} else {
+		console.log(`Department "${departmentName}" not found. Creating a new department.`);
 		const { rows } = await client.query(
 			'INSERT INTO scimic_department (department_name, college_id) VALUES ($1, $2) RETURNING department_pk',
 			[departmentName, college_id]
 		);
-		return rows[0].department_pk;
+
+		if (rows.length === 1) {
+			console.log(`New department "${departmentName}" created with department_id: ${rows[0].department_pk}`);
+			return rows[0].department_pk;
+		} else {
+			console.error(`Error creating department "${departmentName}"`);
+			return null; // Handle the case where department creation fails
+		}
 	}
 }
-
 
 async function getOrCreateCourse(client, courseName, department_id) {
 	const existingCourse = await getCourseByNameAndDepartment(client, courseName, department_id);
 
 	if (existingCourse) {
+		console.log(`Course "${courseName}" already exists. Returning existing course_id: ${existingCourse.course_pk}`);
 		return existingCourse.course_pk;
 	} else {
+		console.log(`Course "${courseName}" not found. Creating a new course.`);
 		const { rows } = await client.query(
 			'INSERT INTO scimic_course (course_name, department_id) VALUES ($1, $2) RETURNING course_pk',
 			[courseName, department_id]
 		);
-		return rows[0].course_pk;
+
+		if (rows.length === 1) {
+			console.log(`New course "${courseName}" created with course_id: ${rows[0].course_pk}`);
+			return rows[0].course_pk;
+		} else {
+			console.error(`Error creating course "${courseName}"`);
+			return null; // Handle the case where course creation fails
+		}
 	}
 }
+
 
 router.post('/bulkuserupload', async (req, res) => {
 	const client = await pool.connect();
