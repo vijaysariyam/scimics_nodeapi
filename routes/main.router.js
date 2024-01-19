@@ -170,7 +170,6 @@ router.post('/googlesignuporlogin', async (req, res) => {
 
 		rows = await getUserByEmail(client, email);
 		if (rows.length > 0) {
-			//Email Already exists retrive data
 			query = `SELECT * FROM scimic_user 
 		   WHERE email = $1`;
 			values = [email];
@@ -207,7 +206,6 @@ router.post('/githubsignuporlogin', async (req, res) => {
 
 		rows = await getUserByGithubId(client, github_id);
 		if (rows.length > 0) {
-			//github_id Already exists retrive data
 			query = `SELECT * FROM scimic_user 
 		   WHERE github_id = $1`;
 			values = [github_id];
@@ -315,7 +313,7 @@ router.post('/login', async (req, res) => {
 		if (password != userData.hashed_password) {
 			return sendErrorMessage(res, 'Invalid credentials');
 		} else {
-			//delete userData.hashed_password;
+
 			if (user_type == userData.user_type) {
 				return sendOkResponse(res, userData);
 			} else {
@@ -547,7 +545,7 @@ router.get('/gitUserData', async (req, res) => {
 		const data = await response.json();
 
 		if (data.access_token) {
-			// Fetch user data using the obtained access token
+
 			const userDataResponse = await fetch('https://api.github.com/user', {
 				method: 'GET',
 				headers: {
@@ -557,13 +555,13 @@ router.get('/gitUserData', async (req, res) => {
 
 			const userData = await userDataResponse.json();
 
-			// Include both access token and user data in the response
+
 			res.status(200).json({
 				access_token: data.access_token,
 				user_data: userData,
 			});
 		} else {
-			// Handle case where access token is not received
+
 			return sendErrorMessage(res, 'Failed to fetch GitHub access token');
 		}
 	} catch (error) {
@@ -771,7 +769,7 @@ router.post('/validatepaper/:userid', async (req, res) => {
 			pb_time,
 		} = result;
 
-		//save report
+
 		var query = `INSERT INTO 
 		icap_reports(
 		user_id, 
@@ -814,24 +812,16 @@ router.post('/validatepaper/:userid', async (req, res) => {
 	}
 });
 
-// function isValidJson(str) {
-// 	try {
-// 		JSON.parse(str);
-// 		return true;
-// 	} catch (error) {
-// 		return false;
-// 	}
-// }
 
 router.post('/getcognitiveq', async (req, res) => {
 	try {
 		const jsonUrl = 'https://parametr-1.onrender.com/parameter1';
-		const { data } = await axios.post(jsonUrl, req.body); // Assuming this API endpoint expects POST requests
+		const { data } = await axios.post(jsonUrl, req.body);
 
 		console.log('Received data:', data);
 
 		if (data) {
-			// Check if data is present
+
 			return sendOkResponse(res, data);
 		} else {
 			return sendErrorResponse(res, 'No data received');
@@ -1298,7 +1288,6 @@ async function getCourseByNameAndDepartmentAndCollege(client, courseName, depart
 	return rows[0];
 }
 
-// Existing functions...
 
 async function getOrCreateCollege(client, collegeName) {
 	const existingCollege = await getCollegeByName(client, collegeName);
@@ -1315,7 +1304,7 @@ async function getOrCreateCollege(client, collegeName) {
 			return rows[0].college_pk;
 		} else {
 			console.error(`Error creating college "${collegeName}"`);
-			return null; // Handle the case where college creation fails
+			return null;
 		}
 	}
 }
@@ -1338,7 +1327,7 @@ async function getOrCreateDepartment(client, departmentName, college_id) {
 			return rows[0].department_pk;
 		} else {
 			console.error(`Error creating department "${departmentName}"`);
-			return null; // Handle the case where department creation fails
+			return null;
 		}
 	}
 }
@@ -1362,13 +1351,12 @@ async function getOrCreateCourse(client, courseName, department_id, college_id) 
 			return rows[0].course_pk;
 		} else {
 			console.error(`Error creating course "${courseName}"`);
-			return null; // Handle the case where course creation fails
+			return null;
 		}
 	}
 }
 
 
-// Existing code...
 
 router.post('/bulkuserupload', async (req, res) => {
 	const client = await pool.connect();
@@ -1390,7 +1378,7 @@ router.post('/bulkuserupload', async (req, res) => {
 
 			if (![firstname, lastname, email, phone, collegeName, departmentName, courseName].every(Boolean)) {
 				console.log('Skipping user due to missing or undefined data:', array[i]);
-				continue; // Skip to the next iteration if any required data is missing or undefined
+				continue;
 			}
 
 			const college_id = await getOrCreateCollege(client, collegeName);
@@ -1432,7 +1420,7 @@ router.post('/bulkuserupload', async (req, res) => {
 
 				if (rows.length === 1) {
 					count++;
-					// const emailResult = await sendAccDetailsEmail(firstname, email, randomPassword);
+					const emailResult = await sendAccDetailsEmail(firstname, email, randomPassword);
 				}
 			}
 		}
@@ -1447,124 +1435,6 @@ router.post('/bulkuserupload', async (req, res) => {
 });
 
 
-
-// async function getCollegeIdByName(client, tableName, collegeName) {
-// 	try {
-// 		const query = `SELECT college_pk FROM ${tableName} WHERE college_name = $1`;
-// 		const { rows } = await client.query(query, [collegeName]);
-
-// 		if (rows.length === 1) {
-// 			return rows[0].college_pk;
-// 		} else {
-// 			return null;
-// 		}
-// 	} catch (error) {
-// 		throw error;
-// 	}
-// }
-
-
-// async function getDepartmentIdByName(client, tableName, departmentName) {
-// 	try {
-// 		const query = `SELECT department_pk FROM ${tableName} WHERE department_name = $1`;
-// 		const { rows } = await client.query(query, [departmentName]);
-
-// 		if (rows.length === 1) {
-// 			return rows[0].department_pk;
-// 		} else {
-// 			return null;
-// 		}
-// 	} catch (error) {
-// 		throw error;
-// 	}
-// }
-
-
-// async function getCourseIdByName(client, tableName, courseName) {
-// 	try {
-// 		const query = `SELECT course_pk FROM ${tableName} WHERE course_name = $1`;
-// 		const { rows } = await client.query(query, [courseName]);
-
-// 		if (rows.length === 1) {
-// 			return rows[0].course_pk;
-// 		} else {
-// 			// Course not found
-// 			return null;
-// 		}
-// 	} catch (error) {
-// 		throw error;
-// 	}
-// }
-
-
-
-// router.post('/bulkuserupload', async (req, res) => {
-// 	const client = await pool.connect();
-// 	const request = req.body;
-// 	// console.log(request);
-// 	const array = request.excelData;
-// 	let count = 0;
-// 	try {
-// 		for (let i = 0; i < array.length; i++) {
-// 			const {
-// 				FirstName: firstname,
-// 				LastName: lastname,
-// 				Email: email,
-// 				Phone: phone,
-// 				College: collegeName,
-// 				Department: departmentName,
-// 				Course: courseName
-// 			} = array[i];
-
-// 			const college_id = await getCollegeIdByName(client, 'scimic_college', collegeName);
-// 			const department_id = await getDepartmentIdByName(client, 'scimic_department', departmentName);
-// 			const course_id = await getCourseIdByName(client, 'scimic_course', courseName);
-
-// 			if (!firstname || !lastname || !email || !phone || !college_id || !department_id || !course_id) {
-// 				return sendErrorMessage(res, 'Bad Request');
-// 			}
-
-// 			const rows = await getUserByEmail(client, email);
-
-// 			if (rows.length === 0) {
-// 				const randomPassword = getPassword(8);
-
-// 				const query = `INSERT INTO scimic_user 
-// 			(firstname, lastname, email, phone, hashed_password, country_code, signin_source, is_account_verified, college_id, department_id, course_id) 
-// 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-// 			RETURNING *`;
-
-// 				const values = [
-// 					firstname,
-// 					lastname,
-// 					email,
-// 					phone,
-// 					randomPassword,
-// 					'+91',
-// 					'EMAIL',
-// 					false,
-// 					college_id,
-// 					department_id,
-// 					course_id
-// 				];
-
-// 				const { rows } = await client.query(query, values);
-
-// 				if (rows.length === 1) {
-// 					count++;
-
-// 					// const emailResult = await sendAccDetailsEmail(firstname, email, randomPassword);
-// 				}
-// 			}
-// 		}
-
-// 		return sendOkResponse(res, `Users created: ${count}/${array.length}`);
-// 	} catch (error) {
-// 		return sendInternalServerErrorResponse(res, error.message);
-// 	} finally {
-// 		client.release();
-// 	}
-// });
 
 
 
