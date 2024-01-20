@@ -1289,7 +1289,19 @@ async function getCourseByNameAndDepartmentAndCollege(client, courseName, depart
 }
 
 
+function isValidName(name) {
+	const validNameRegex = /^[a-zA-Z0-9\s-]+$/;
+	return validNameRegex.test(name);
+}
+
+
+
 async function getOrCreateCollege(client, collegeName) {
+	if (!isValidName(collegeName)) {
+		console.log(`Invalid college name: ${collegeName}. Skipping user.`);
+		return null;
+	}
+
 	const existingCollege = await getCollegeByName(client, collegeName);
 
 	if (existingCollege) {
@@ -1310,6 +1322,11 @@ async function getOrCreateCollege(client, collegeName) {
 }
 
 async function getOrCreateDepartment(client, departmentName, college_id) {
+	if (!isValidName(departmentName)) {
+		console.log(`Invalid department name: ${departmentName}. Skipping user.`);
+		return null;
+	}
+
 	const existingDepartment = await getDepartmentByNameAndCollege(client, departmentName, college_id);
 
 	if (existingDepartment) {
@@ -1333,7 +1350,12 @@ async function getOrCreateDepartment(client, departmentName, college_id) {
 }
 
 async function getOrCreateCourse(client, courseName, department_id, college_id) {
-	const existingCourse = await getCourseByNameAndDepartmentAndCollege(client, courseName, department_id, college_id);
+	if (!isValidName(courseName)) {
+		console.log(`Invalid course name: ${courseName}. Skipping user.`);
+		return null;
+	}
+
+	const existingCourse = await getCourseByNameAndDepartment(client, courseName, department_id);
 
 	if (existingCourse) {
 		console.log(`Course "${courseName}" already exists. Returning existing course_id: ${existingCourse.course_pk}`);
@@ -1381,47 +1403,51 @@ router.post('/bulkuserupload', async (req, res) => {
 				continue;
 			}
 
+			const existingUser = await getUserByEmail(client, email);
+
+			if (existingUser.length > 0) {
+				console.log(`User with email ${email} already exists. Skipping.`);
+				continue;
+			}
+
 			const college_id = await getOrCreateCollege(client, collegeName);
 			const department_id = await getOrCreateDepartment(client, departmentName, college_id);
 			const course_id = await getOrCreateCourse(client, courseName, department_id, college_id);
 
-			if (!firstname || !lastname || !email || !phone || !college_id || !department_id || !course_id) {
-				return sendErrorMessage(res, 'Bad Request');
+			if (!college_id || !department_id || !course_id) {
+				throw new Error('Error fetching or creating IDs');
 			}
 
-			const existingUser = await getUserByEmail(client, email);
+			const randomPassword = getPassword(8);
 
-			if (existingUser.length === 0) {
-				const randomPassword = getPassword(8);
+			const query = `
+                INSERT INTO scimic_user 
+                (firstname, lastname, email, phone, hashed_password, country_code, signin_source, is_account_verified, college_id, department_id, course_id) 
+                VALUES 
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                RETURNING *
+            `;
 
-				const query = `
-                    INSERT INTO scimic_user 
-					(firstname, lastname, email, phone, hashed_password, country_code, signin_source, is_account_verified, college_id, department_id, course_id) 
-                    VALUES 
-					($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-                    RETURNING *
-					`;
+			const values = [
+				firstname,
+				lastname,
+				email,
+				phone,
+				randomPassword,
+				'+91',
+				'EMAIL',
+				false,
+				college_id,
+				department_id,
+				course_id,
+			];
 
-				const values = [
-					firstname,
-					lastname,
-					email,
-					phone,
-					randomPassword,
-					'+91',
-					'EMAIL',
-					false,
-					college_id,
-					department_id,
-					course_id,
-				];
+			const { rows } = await client.query(query, values);
 
-				const { rows } = await client.query(query, values);
-
-				if (rows.length === 1) {
-					count++;
-					const emailResult = await sendAccDetailsEmail(firstname, email, randomPassword);
-				}
+			if (rows.length === 1) {
+				count++;
+				const emailResult = await sendAccDetailsEmail(firstname, email, randomPassword);
+				console.log(`User created: ${firstname} (${email})`);
 			}
 		}
 
@@ -1433,6 +1459,7 @@ router.post('/bulkuserupload', async (req, res) => {
 		client.release();
 	}
 });
+
 
 
 
