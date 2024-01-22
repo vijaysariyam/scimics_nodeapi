@@ -169,6 +169,9 @@ router.post('/googlesignuporlogin', async (req, res) => {
 		var query;
 
 		rows = await getUserByEmail(client, email);
+		if (rows.length > 0 && rows[0].is_blocked) {
+			return sendErrorMessage(res, 'User is blocked by the admin');
+		}
 		if (rows.length > 0) {
 			query = `SELECT * FROM scimic_user 
 		   WHERE email = $1`;
@@ -205,6 +208,9 @@ router.post('/githubsignuporlogin', async (req, res) => {
 		var query;
 
 		rows = await getUserByGithubId(client, github_id);
+		if (rows.length > 0 && rows[0].is_blocked) {
+			return sendErrorMessage(res, 'User is blocked by the admin');
+		}
 		if (rows.length > 0) {
 			query = `SELECT * FROM scimic_user 
 		   WHERE github_id = $1`;
@@ -310,6 +316,10 @@ router.post('/login', async (req, res) => {
 		if (rows.length == 0) return sendErrorMessage(res, "Couldn't find your account");
 
 		const userData = rows[0];
+		console.log(userData);
+		if (userData.is_blocked) {
+			return sendErrorMessage(res, 'User is blocked by the admin');
+		}
 		if (password != userData.hashed_password) {
 			return sendErrorMessage(res, 'Invalid credentials');
 		} else {
